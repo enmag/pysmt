@@ -1000,7 +1000,23 @@ class MSatConverter(Converter, DagWalker):
         return res
 
     def walk_div(self, formula, args, **kwargs):
-        return mathsat.msat_make_divide(self.msat_env(), args[0], args[1])
+        menv = self.msat_env()
+        num = args[0]
+        den = args[1]
+        div = mathsat.msat_make_divide(menv, num, den)
+        if self.env.stc.get_type(formula).is_real_type():
+            return div
+        # integer division n / d, rewrite as real division and floor operators.
+        # smtlib2 semantics: d >= 0 ? floor(float(n) / d) : ceil(float(n) / d)
+        # we rewrite ceil(k) as -floor(-k)
+        zero = mathsat.msat_make_number(menv, "0")
+        m_1 = mathsat.msat_make_number(menv, "-1")
+        pos_den = mathsat.msat_make_leq(menv, zero, den)
+        floor = mathsat.msat_make_floor(menv, div)
+        ceil = mathsat.msat_make_times(menv, div, m_1)
+        ceil = mathsat.msat_make_floor(menv, ceil)
+        ceil = mathsat.msat_make_times(menv, ceil, m_1)
+        return mathsat.msat_make_term_ite(menv, pos_den, floor, ceil)
 
     def walk_function(self, formula, args, **kwargs):
         name = formula.function_name()
