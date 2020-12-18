@@ -1083,7 +1083,6 @@ class MSatConverter(Converter, DagWalker):
         else:
             raise NotImplementedError("Usupported type for '%s'" % tp)
 
-
     def _msat_type_to_type(self, tp):
         """Converts a MathSAT type into a PySMT type."""
         if mathsat.msat_is_bool_type(self.msat_env(), tp):
@@ -1106,7 +1105,6 @@ class MSatConverter(Converter, DagWalker):
 
             # It must be a function type, currently unsupported
             raise NotImplementedError("Function types are unsupported")
-
 
     def declare_variable(self, var):
         if not var.is_symbol():
