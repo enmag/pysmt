@@ -663,12 +663,12 @@ class TimesDistributor(IdentityDagWalker):
         else:
             assert expr_type.is_int_type()
             minus_one = self.iminus_one
-        Times = self.Times
         lhs, rhs = args
-        if not rhs.is_plus():
-            return self.Plus(lhs, Times(minus_one, rhs))
-        new_args = [lhs]
-        new_args.extend(Times(minus_one, r) for r in rhs.args())
+        # we assume that rhs is either a sum or times cannot distribute.
+        rhs = [rhs] if not rhs.is_plus() else list(rhs.args())
+        # we need to keep the plus flat: no nested sums (see walk_times).
+        new_args = [lhs] if not lhs.is_plus() else list(lhs.args())
+        new_args.extend(self.Times(minus_one, r) for r in rhs)
         return self.Plus(new_args)
 
 # EOC TimesDistributivity
