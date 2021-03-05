@@ -18,8 +18,7 @@
 
 import warnings
 from collections import namedtuple
-from six.moves import cStringIO
-from six.moves import xrange
+from io import StringIO
 
 import pysmt.smtlib.commands as smtcmd
 from pysmt.exceptions import (UnknownSmtLibCommandError, NoLogicAvailableError,
@@ -138,7 +137,7 @@ class SmtLibCommand(namedtuple('SmtLibCommand', ['name', 'args'])):
             raise UnknownSmtLibCommandError(self.name)
 
     def serialize_to_string(self, daggify=True):
-        buf = cStringIO()
+        buf = StringIO()
         self.serialize(buf, daggify=daggify)
         return buf.getvalue()
 
@@ -212,10 +211,10 @@ class SmtLibScript(object):
                 stack = []
                 backtrack = []
             elif cmd.name == smtcmd.PUSH:
-                for _ in xrange(cmd.args[0]):
+                for _ in range(cmd.args[0]):
                     backtrack.append(len(stack))
             elif cmd.name == smtcmd.POP:
-                for _ in xrange(cmd.args[0]):
+                for _ in range(cmd.args[0]):
                     l = backtrack.pop()
                     stack = stack[:l]
 
@@ -300,7 +299,10 @@ def evaluate_command(cmd, solver):
         return solver.set_info(cmd.args[0], cmd.args[1])
 
     if cmd.name == smtcmd.SET_OPTION:
-        return solver.set_option(cmd.args[0], cmd.args[1])
+        opt = cmd.args[0]
+        if opt[0] == ':':
+            opt = opt[1:]
+        return solver.set_option(opt, cmd.args[1])
 
     elif cmd.name == smtcmd.ASSERT:
         return solver.assert_(cmd.args[0])
@@ -346,6 +348,9 @@ def evaluate_command(cmd, solver):
 
     elif cmd.name == smtcmd.GET_UNSAT_CORE:
         return solver.get_unsat_core()
+
+    elif cmd.name == smtcmd.GET_MODEL:
+        return solver.get_model()
 
     elif cmd.name == smtcmd.DECLARE_SORT:
         name = cmd.args[0].name

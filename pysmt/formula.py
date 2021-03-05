@@ -34,7 +34,6 @@ else:
     from collections import Iterable
 
 import warnings
-from six.moves import xrange
 
 import pysmt.typing as types
 import pysmt.operators as op
@@ -98,7 +97,7 @@ class FormulaManager(object):
             return n
 
     def _create_symbol(self, name, typename=types.BOOL):
-        if len(name) == 0:
+        if len(name) == 0 and not self.env.allow_empty_var_names:
             raise PysmtValueError("Empty string is not a valid name")
         if not isinstance(typename, types.PySMTType):
             raise PysmtValueError("typename must be a PySMTType.")
@@ -928,7 +927,7 @@ class FormulaManager(object):
     def BVRepeat(self, formula, count=1):
         """Returns the concatenation of count copies of formula."""
         res = formula
-        for _ in xrange(count-1):
+        for _ in range(count-1):
             res = self.BVConcat(res, formula)
         return res
 

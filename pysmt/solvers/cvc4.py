@@ -17,8 +17,6 @@
 #
 from __future__ import absolute_import
 
-from six.moves import xrange
-
 from pysmt.exceptions import SolverAPINotFound
 
 try:
@@ -163,13 +161,13 @@ class CVC4Solver(Solver, SmtLibBasicSolver, SmtLibIgnoreMixin):
             # Therefore, we need to check that we can actually do a push
             raise NotImplementedError("The solver is not incremental")
 
-        for _ in xrange(levels):
+        for _ in range(levels):
             self.cvc4.push()
         return
 
     @clear_pending_pop
     def pop(self, levels=1):
-        for _ in xrange(levels):
+        for _ in range(levels):
             self.cvc4.pop()
         return
 
