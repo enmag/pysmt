@@ -162,11 +162,7 @@ class Solver(object):
         :rtype: dict
 
         """
-        res = {}
-        for f in formulae:
-            v = self.get_value(f)
-            res[f] = v
-        return res
+        return {f: self.get_value(f) for f in formulae}
 
     def push(self, levels=1):
         """Push the current context of the given number of levels.
@@ -234,11 +230,7 @@ class Solver(object):
 
         Returns a dictionary mapping each formula to its python value.
         """
-        res = {}
-        for f in formulae:
-            v = self.get_py_value(f)
-            res[f] = v
-        return res
+        return {f: self.get_py_value(f) for f in formulae}
 
     def __enter__(self):
         """Manages entering a Context (i.e., with statement)"""
@@ -451,11 +443,8 @@ class Model(object):
         Evaluates the values of the formulae in the current model
         returning a dictionary.
         """
-        res = {}
-        for f in formulae:
-            v = self.get_value(f, model_completion=model_completion)
-            res[f] = v
-        return res
+        return {f: self.get_value(f, model_completion=model_completion)
+                for f in formulae}
 
     def get_py_value(self, formula, model_completion=True):
         """Returns the value of formula as a python type.
@@ -473,11 +462,8 @@ class Model(object):
         Returns the values of the formulae as python types. in the
         current model returning a dictionary.
         """
-        res = {}
-        for f in formulae:
-            v = self.get_py_value(f, model_completion=model_completion)
-            res[f] = v
-        return res
+        return {f: self.get_py_value(f, model_completion=model_completion)
+                for f in formulae}
 
     def satisfies(self, formula, solver=None):
         """Checks whether the model satisfies the formula.
@@ -494,7 +480,7 @@ class Model(object):
             return False
 
         free_vars = simp.get_free_variables()
-        if  len(free_vars) > 0:
+        if len(free_vars) > 0:
             # Partial model
             return False
 
