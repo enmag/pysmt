@@ -26,7 +26,7 @@ def check_version(module):
         elif module == "msat":
             import mathsat
             version_str = mathsat.msat_get_version()
-            m = re.match(r"^MathSAT5 version (\d+\.\d+\.\d+) .*$", version_str)
+            m = re.match(r"^MathSAT5 version =?(\d+\.\d+\.\d+) .*$", version_str)
             if m is not None:
                 version = m.group(1)
 
