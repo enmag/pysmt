@@ -26,11 +26,12 @@ from pysmt.utils import quote
 
 class SmtPrinter(TreeWalker):
 
-    def __init__(self, stream):
+    def __init__(self, stream, env=None):
         TreeWalker.__init__(self)
+        self.env = env if env is not None else get_env()
         self.stream = stream
         self.write = self.stream.write
-        self.mgr = get_env().formula_manager
+        self.mgr = self.env.formula_manager
 
     def printer(self, f):
         self.walk(f)
@@ -256,7 +257,8 @@ class SmtPrinter(TreeWalker):
         for _ in range(len(assign)):
             self.write("(store ")
 
-        self.write("((as const %s) " % formula.get_type().as_smtlib(False))
+        self.write("((as const %s) " %
+                   self.env.stc.get_type(formula).as_smtlib(False))
         yield formula.array_value_default()
         self.write(")")
 
@@ -270,15 +272,15 @@ class SmtPrinter(TreeWalker):
 
 class SmtDagPrinter(DagWalker):
 
-    def __init__(self, stream, template=".def_%d"):
-        DagWalker.__init__(self, invalidate_memoization=True)
+    def __init__(self, stream, template=".def_%d", env=None):
+        DagWalker.__init__(self, invalidate_memoization=True, env=env)
         self.stream = stream
         self.write = self.stream.write
         self.openings = 0
         self.name_seed = 0
         self.template = template
         self.names = None
-        self.mgr = get_env().formula_manager
+        self.mgr = self.env.formula_manager
 
     def _push_with_children_to_stack(self, formula, **kwargs):
         """Add children to the stack."""
@@ -299,7 +301,8 @@ class SmtDagPrinter(DagWalker):
     def printer(self, f):
         self.openings = 0
         self.name_seed = 0
-        self.names = set(quote(x.symbol_name()) for x in f.get_free_variables())
+        self.names = set(quote(x.symbol_name())
+                         for x in self.env.fvo.get_free_variables(f))
 
         key = self.walk(f)
         self.write(key)
@@ -504,7 +507,7 @@ class SmtDagPrinter(DagWalker):
             self.write(" %s)" % s.symbol_type().as_smtlib(False))
         self.write(") ")
 
-        subprinter = SmtDagPrinter(self.stream)
+        subprinter = SmtDagPrinter(self.stream, env=self.env)
         subprinter.printer(formula.arg(0))
 
         self.write(")))")
@@ -609,7 +612,8 @@ class SmtDagPrinter(DagWalker):
         for _ in range((len(args) - 1) // 2):
             self.write("(store ")
 
-        self.write("((as const %s) " % formula.get_type().as_smtlib(False))
+        self.write("((as const %s) " %
+                   self.env.stc.get_type(formula).as_smtlib(False))
         self.write(args[0])
         self.write(")")
 
@@ -623,7 +627,7 @@ class SmtDagPrinter(DagWalker):
         return sym
 
 
-def to_smtlib(formula, daggify=True):
+def to_smtlib(formula, daggify=True, env=None):
     """Returns a Smt-Lib string representation of the formula.
 
     The daggify parameter can be used to switch from a linear-size
@@ -636,9 +640,9 @@ def to_smtlib(formula, daggify=True):
     buf = StringIO()
     p = None
     if daggify:
-        p = SmtDagPrinter(buf)
+        p = SmtDagPrinter(buf, env=env)
     else:
-        p = SmtPrinter(buf)
+        p = SmtPrinter(buf, env=env)
     p.printer(formula)
     res = buf.getvalue()
     buf.close()

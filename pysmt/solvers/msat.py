@@ -75,10 +75,10 @@ class MSatEnv(object):
 class MathSAT5Model(Model):
     """Stand-alone model"""
 
-    def __init__(self, environment, msat_env):
-        Model.__init__(self, environment)
+    def __init__(self, env, msat_env):
+        Model.__init__(self, env)
         self.msat_env = msat_env
-        self.converter = MSatConverter(environment, self.msat_env)
+        self.converter = MSatConverter(env, self.msat_env)
         self.msat_model = None
 
         msat_model = mathsat.msat_get_model(self.msat_env())
@@ -98,9 +98,9 @@ class MathSAT5Model(Model):
         if mathsat.MSAT_ERROR_TERM(msat_res):
             raise InternalSolverError("get model value")
         val = self.converter.back(msat_res)
-        if self.environment.stc.get_type(formula).is_real_type() and \
+        if self.env.stc.get_type(formula).is_real_type() and \
                val.is_int_constant():
-            val = self.environment.formula_manager.Real(val.constant_value())
+            val = self.env.formula_manager.Real(val.constant_value())
         return val
 
     def iterator_over(self, language):
@@ -120,9 +120,9 @@ class MathSAT5Model(Model):
             if mathsat.msat_term_is_constant(self.msat_env(), t):
                 pt = self.converter.back(t)
                 pv = self.converter.back(v)
-                if self.environment.stc.get_type(pt).is_real_type() and \
+                if self.env.stc.get_type(pt).is_real_type() and \
                        pv.is_int_constant():
-                    pv = self.environment.formula_manager.Real(
+                    pv = self.env.formula_manager.Real(
                         pv.constant_value())
                 yield (pt, pv)
 
@@ -179,9 +179,9 @@ class MathSAT5Solver(IncrementalTrackingSolver, UnsatCoreSolver,
 
     OptionsClass = MathSATOptions
 
-    def __init__(self, environment, logic, **options):
+    def __init__(self, env, logic, **options):
         IncrementalTrackingSolver.__init__(self,
-                                           environment=environment,
+                                           env=env,
                                            logic=logic,
                                            **options)
 
@@ -189,13 +189,13 @@ class MathSAT5Solver(IncrementalTrackingSolver, UnsatCoreSolver,
         self.options(self)
         self.msat_env = MSatEnv(self.msat_config)
         mathsat.msat_destroy_config(self.msat_config)
-        self.converter = MSatConverter(environment, self.msat_env)
+        self.converter = MSatConverter(env, self.msat_env)
 
         # Shortcuts
         self.realType = mathsat.msat_get_rational_type(self.msat_env())
         self.intType = mathsat.msat_get_integer_type(self.msat_env())
         self.boolType = mathsat.msat_get_bool_type(self.msat_env())
-        self.mgr = environment.formula_manager
+        self.mgr = env.formula_manager
 
     @clear_pending_pop
     def _reset_assertions(self):
@@ -357,13 +357,13 @@ class MathSAT5Solver(IncrementalTrackingSolver, UnsatCoreSolver,
         titem = self.converter.convert(item)
         tval = mathsat.msat_get_model_value(self.msat_env(), titem)
         val = self.converter.back(tval)
-        if self.environment.stc.get_type(item).is_real_type() and \
+        if self.env.stc.get_type(item).is_real_type() and \
                val.is_int_constant():
             val = self.mgr.Real(val.constant_value())
         return val
 
     def get_model(self):
-        return MathSAT5Model(self.environment, self.msat_env)
+        return MathSAT5Model(self.env, self.msat_env)
 
     def _exit(self):
         del self.msat_env
@@ -371,12 +371,12 @@ class MathSAT5Solver(IncrementalTrackingSolver, UnsatCoreSolver,
 
 class MSatConverter(Converter, DagWalker):
 
-    def __init__(self, environment, msat_env):
-        DagWalker.__init__(self, environment)
+    def __init__(self, env, msat_env):
+        DagWalker.__init__(self, env)
 
         self.msat_env = msat_env
-        self.mgr = environment.formula_manager
-        self._get_type = environment.stc.get_type
+        self.mgr = env.formula_manager
+        self._get_type = env.stc.get_type
 
         # Maps a Symbol into the corresponding msat_decl instance in the msat_env
         self.symbol_to_decl = {}
@@ -439,7 +439,7 @@ class MSatConverter(Converter, DagWalker):
         }
 
         # Handling of UF bool args
-        self._ufrewriter = MSatBoolUFRewriter(environment)
+        self._ufrewriter = MSatBoolUFRewriter(env)
 
         # Signature Computation
         self.term_sig = {
@@ -1124,7 +1124,7 @@ if hasattr(mathsat, "MSAT_EXIST_ELIM_ALLSMT_FM"):
 
         LOGICS = [LRA, LIA]
 
-        def __init__(self, environment, logic=None, algorithm='lw'):
+        def __init__(self, env, logic=None, algorithm='lw'):
             """Initialize the Quantifier Eliminator using 'fm' or 'lw'.
 
             fm: Fourier-Motzkin (default)
@@ -1138,7 +1138,7 @@ if hasattr(mathsat, "MSAT_EXIST_ELIM_ALLSMT_FM"):
                                       " only works with 'lw' algorithm")
 
             QuantifierEliminator.__init__(self)
-            IdentityDagWalker.__init__(self, env=environment)
+            IdentityDagWalker.__init__(self, env=env)
             self.msat_config = mathsat.msat_create_default_config("QF_LRA")
             self.msat_env = MSatEnv(self.msat_config)
             mathsat.msat_destroy_config(self.msat_config)
@@ -1148,7 +1148,7 @@ if hasattr(mathsat, "MSAT_EXIST_ELIM_ALLSMT_FM"):
             self.logic = logic
 
             self.algorithm = algorithm
-            self.converter = MSatConverter(environment, self.msat_env)
+            self.converter = MSatConverter(env, self.msat_env)
 
         def eliminate_quantifiers(self, formula):
             """Returns a quantifier-free equivalent formula of `formula`."""
@@ -1208,15 +1208,15 @@ if hasattr(mathsat, "MSAT_EXIST_ELIM_ALLSMT_FM"):
 
     class MSatFMQuantifierEliminator(MSatQuantifierEliminator):
         LOGICS = [LRA]
-        def __init__(self, environment, logic=None):
-            MSatQuantifierEliminator.__init__(self, environment,
+        def __init__(self, env, logic=None):
+            MSatQuantifierEliminator.__init__(self, env,
                                               logic=logic, algorithm='fm')
 
 
     class MSatLWQuantifierEliminator(MSatQuantifierEliminator):
         LOGICS = [LRA, LIA]
-        def __init__(self, environment, logic=None):
-            MSatQuantifierEliminator.__init__(self, environment,
+        def __init__(self, env, logic=None):
+            MSatQuantifierEliminator.__init__(self, env,
                                               logic=logic, algorithm='lw')
 
 
@@ -1224,11 +1224,11 @@ class MSatInterpolator(Interpolator):
 
     LOGICS = [QF_UFLIA, QF_UFLRA, QF_BV]
 
-    def __init__(self, environment, logic=None):
+    def __init__(self, env, logic=None):
         Interpolator.__init__(self)
         self.msat_env = MSatEnv()
-        self.converter = MSatConverter(environment, self.msat_env)
-        self.environment = environment
+        self.converter = MSatConverter(env, self.msat_env)
+        self.env = env
         self.logic = logic
 
     def _exit(self):
@@ -1236,7 +1236,7 @@ class MSatInterpolator(Interpolator):
 
     def _check_logic(self, formulas):
         for f in formulas:
-            logic = get_logic(f, self.environment)
+            logic = get_logic(f, self.env)
             ok = any(logic <= l for l in self.LOGICS)
             if not ok:
                 raise PysmtValueError("Logic not supported by MathSAT "
@@ -1304,8 +1304,8 @@ class MSatBoolUFRewriter(IdentityDagWalker):
     Converter directly.
     """
 
-    def __init__(self, environment):
-        IdentityDagWalker.__init__(self, environment)
+    def __init__(self, env):
+        IdentityDagWalker.__init__(self, env)
         self.get_type = self.env.stc.get_type
         self.mgr = self.env.formula_manager
 

@@ -81,9 +81,9 @@ class CVC4Solver(Solver, SmtLibBasicSolver, SmtLibIgnoreMixin):
 
     OptionsClass = CVC4Options
 
-    def __init__(self, environment, logic, **options):
+    def __init__(self, env, logic, **options):
         Solver.__init__(self,
-                        environment=environment,
+                        env=env,
                         logic=logic,
                         **options)
         self.em = CVC4.ExprManager()
@@ -100,7 +100,7 @@ class CVC4Solver(Solver, SmtLibBasicSolver, SmtLibIgnoreMixin):
             self.logic_name = "LRA"
 
         self.reset_assertions()
-        self.converter = CVC4Converter(environment, cvc4_exprMgr=self.em)
+        self.converter = CVC4Converter(env, cvc4_exprMgr=self.em)
         return
 
     @clear_pending_pop
@@ -126,17 +126,17 @@ class CVC4Solver(Solver, SmtLibBasicSolver, SmtLibIgnoreMixin):
 
     def get_model(self):
         assignment = {}
-        for s in self.environment.formula_manager.get_all_symbols():
+        for s in self.env.formula_manager.get_all_symbols():
             if s.is_term():
                 if s.symbol_type().is_custom_type(): continue
                 v = self.get_value(s)
                 assignment[s] = v
-        return EagerModel(assignment=assignment, environment=self.environment)
+        return EagerModel(assignment=assignment, env=self.env)
 
     @clear_pending_pop
     def solve(self, assumptions=None):
         if assumptions is not None:
-            conj_assumptions = self.environment.formula_manager.And(assumptions)
+            conj_assumptions = self.env.formula_manager.And(assumptions)
             cvc4_assumption = self.converter.convert(conj_assumptions)
             res = self.cvc4.checkSat(cvc4_assumption)
         else:
@@ -186,9 +186,9 @@ class CVC4Solver(Solver, SmtLibBasicSolver, SmtLibIgnoreMixin):
         term = self.converter.convert(item)
         cvc4_res = self.cvc4.getValue(term)
         res = self.converter.back(cvc4_res)
-        if self.environment.stc.get_type(item).is_real_type() and \
-           self.environment.stc.get_type(res).is_int_type():
-            res = self.environment.formula_manager.Real(Fraction(res.constant_value(), 1))
+        if self.env.stc.get_type(item).is_real_type() and \
+           self.env.stc.get_type(res).is_int_type():
+            res = self.env.formula_manager.Real(Fraction(res.constant_value(), 1))
         return res
 
     def _exit(self):
@@ -207,8 +207,8 @@ class CVC4Solver(Solver, SmtLibBasicSolver, SmtLibIgnoreMixin):
 
 class CVC4Converter(Converter, DagWalker):
 
-    def __init__(self, environment, cvc4_exprMgr):
-        DagWalker.__init__(self, environment)
+    def __init__(self, env, cvc4_exprMgr):
+        DagWalker.__init__(self, env)
 
         self.cvc4_exprMgr = cvc4_exprMgr
         self.mkExpr = cvc4_exprMgr.mkExpr
@@ -221,8 +221,8 @@ class CVC4Converter(Converter, DagWalker):
 
         self.declared_vars = {}
         self.backconversion = {}
-        self.mgr = environment.formula_manager
-        self._get_type = environment.stc.get_type
+        self.mgr = env.formula_manager
+        self._get_type = env.stc.get_type
         return
 
     def declare_variable(self, var):
@@ -592,7 +592,7 @@ class CVC4Converter(Converter, DagWalker):
         elif tp.is_custom_type():
             return self.cvc4_exprMgr.mkSort(str(tp))
         else:
-            raise NotImplementedError("Unsupported type: %s" %tp)
+            raise NotImplementedError("Unsupported type: %s" % tp)
 
     def _cvc4_type_to_type(self, type_):
         if type_.isBoolean():
