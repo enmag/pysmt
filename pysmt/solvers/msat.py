@@ -232,7 +232,7 @@ class MathSAT5Solver(IncrementalTrackingSolver, UnsatCoreSolver,
 
     def _named_assertions_map(self):
         if self.options.unsat_cores_mode == "named":
-            return dict((t[0], (t[1],t[2])) for t in self.assertions)
+            return dict((t[0], (t[1], t[2])) for t in self.assertions)
         return None
 
     @clear_pending_pop
@@ -309,7 +309,7 @@ class MathSAT5Solver(IncrementalTrackingSolver, UnsatCoreSolver,
 
         else:
             return dict(("_a%d" % i, f)
-                        for i,f in enumerate(self.get_unsat_core()))
+                        for i, f in enumerate(self.get_unsat_core()))
 
     @clear_pending_pop
     def all_sat(self, important, callback):
@@ -338,9 +338,8 @@ class MathSAT5Solver(IncrementalTrackingSolver, UnsatCoreSolver,
         tvar = self.converter.convert(var)
         mval = mathsat.MSAT_UNDEF
         if val is not None:
-            mval = mathsat.MSAT_TRUE if val==True else mathsat.MSAT_FALSE
+            mval = mathsat.MSAT_TRUE if val is True else mathsat.MSAT_FALSE
         mathsat.msat_add_preferred_for_branching(self.msat_env(), tvar, mval)
-        return
 
     def print_model(self, name_filter=None):
         if name_filter is not None:
@@ -708,7 +707,8 @@ class MSatConverter(Converter, DagWalker):
             elif mathsat.msat_is_integer_type(self.msat_env(), ty):
                 res = self.mgr.Symbol(rep, types.INT)
             else:
-                check_arr, idx_type, val_type = mathsat.msat_is_array_type(self.msat_env(), ty)
+                check_arr, idx_type, val_type = \
+                    mathsat.msat_is_array_type(self.msat_env(), ty)
                 if check_arr:
                     i = self._msat_type_to_type(idx_type)
                     e = self._msat_type_to_type(val_type)
@@ -813,10 +813,10 @@ class MSatConverter(Converter, DagWalker):
 
         if self._get_type(formula).is_bool_type():
             impl = self.mgr.Implies(formula.arg(0), formula.arg(1))
-            th = self.walk_implies(impl, [i,t])
+            th = self.walk_implies(impl, [i, t])
             nif = self.mgr.Not(formula.arg(0))
             ni = self.walk_not(nif, [i])
-            el = self.walk_implies(self.mgr.Implies(nif, formula.arg(2)), [ni,e])
+            el = self.walk_implies(self.mgr.Implies(nif, formula.arg(2)), [ni, e])
             return mathsat.msat_make_and(self.msat_env(), th, el)
         else:
             return mathsat.msat_make_term_ite(self.msat_env(), i, t, e)
@@ -824,7 +824,7 @@ class MSatConverter(Converter, DagWalker):
     def walk_real_constant(self, formula, **kwargs):
         assert is_pysmt_fraction(formula.constant_value())
         frac = formula.constant_value()
-        n,d = frac.numerator, frac.denominator
+        n, d = frac.numerator, frac.denominator
         rep = str(n) + "/" + str(d)
         return mathsat.msat_make_number(self.msat_env(), rep)
 
@@ -989,18 +989,7 @@ class MSatConverter(Converter, DagWalker):
         return res
 
     def walk_pow(self, formula, args, **kwargs):
-        n = to_python_integer(formula.args()[1].constant_value())
-        if n == 0:
-            return mathsat.msat_make_number(self.msat_env(), "1")
-        is_neg = (n < 0)
-        n = abs(n)
-        res = args[0]
-        for i in range(2, n):
-            res = mathsat.msat_make_times(self.msat_env(), res, args[0])
-        if is_neg:
-            one = mathsat.msat_make_number(self.msat_env(), "1")
-            res = mathsat.msat_make_divide(self.msat_env(), one, res)
-        return res
+        return mathsat.msat_make_pow(self.msat_env(), args[0], args[1])
 
     def walk_div(self, formula, args, **kwargs):
         menv = self.msat_env()
