@@ -42,8 +42,8 @@ class SimpleTypeChecker(walkers.DagWalker):
         """ Returns the pysmt.types type of the formula """
         res = self.walk(formula)
         if not self.be_nice and res is None:
-            raise PysmtTypeError("The formula '%s' is not well-formed" \
-                                 % str(formula))
+            raise PysmtTypeError("The formula '%s' is not well-formed" %
+                                 self.env.serializer.serialize(formula))
         return res
 
     def walk_type_to_type(self, formula, args, type_in, type_out):
