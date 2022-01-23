@@ -326,25 +326,17 @@ class SmtPrinter(TreeWalker):
 
 class SmtDagPrinter(DagWalker):
 
-<<<<<<< HEAD
-    def __init__(self, stream, template=".def_%d", env=None):
+    def __init__(self, stream, template=".def_%d", env=None,
+                 annotations=None):
         DagWalker.__init__(self, invalidate_memoization=True, env=env)
-=======
-    def __init__(self, stream, template=".def_%d", annotations=None):
-        DagWalker.__init__(self, invalidate_memoization=True)
->>>>>>> a32cd277742262f1283d93c664a45ad29ef50528
         self.stream = stream
         self.write = self.stream.write
         self.openings = 0
         self.name_seed = 0
         self.template = template
         self.names = None
-<<<<<<< HEAD
         self.mgr = self.env.formula_manager
-=======
-        self.mgr = get_env().formula_manager
         self.annotations = annotations
->>>>>>> a32cd277742262f1283d93c664a45ad29ef50528
 
     def _push_with_children_to_stack(self, formula, **kwargs):
         """Add children to the stack."""
