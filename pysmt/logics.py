@@ -357,7 +357,8 @@ QF_LIRA = Logic(name="QF_LIRA",
                 integer_arithmetic=True,
                 real_arithmetic=True,
                 linear=True,
-                uninterpreted=False)
+                uninterpreted=False,
+                quantifier_free=True)
 
 
 UFLIRA = Logic(name="UFLIRA",
