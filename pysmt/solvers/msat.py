@@ -18,15 +18,9 @@
 from warnings import warn
 
 from pysmt.exceptions import SolverAPINotFound
-from pysmt.constants import (Fraction, is_pysmt_fraction, is_pysmt_integer,
-                             to_python_integer)
-
-try:
-    import mathsat
-except ImportError:
-    raise SolverAPINotFound
-
-from pysmt.logics import LRA, LIA, QF_UFLIA, QF_UFLRA, QF_BV, PYSMT_QF_LOGICS
+from pysmt.constants import (Fraction, is_pysmt_fraction, is_pysmt_integer)
+from pysmt.logics import (LRA, LIA, QF_UFLIA, QF_UFLRA, QF_BV, QF_LIRA,
+                          PYSMT_QF_LOGICS)
 from pysmt.oracles import get_logic
 
 import pysmt.operators as op
@@ -36,8 +30,6 @@ from pysmt.solvers.solver import (IncrementalTrackingSolver, UnsatCoreSolver,
 from pysmt.solvers.smtlib import SmtLibBasicSolver, SmtLibIgnoreMixin
 from pysmt.walkers import DagWalker
 from pysmt.exceptions import (SolverReturnedUnknownResultError,
-                              SolverNotConfiguredForUnsatCoresError,
-                              SolverStatusError,
                               InternalSolverError,
                               PysmtValueError, PysmtTypeError,
                               ConvertExpressionError)
@@ -45,6 +37,11 @@ from pysmt.decorators import clear_pending_pop, catch_conversion_error
 from pysmt.solvers.qelim import QuantifierEliminator
 from pysmt.solvers.interpolation import Interpolator
 from pysmt.walkers.identitydag import IdentityDagWalker
+
+try:
+    import mathsat
+except ImportError as e:
+    raise SolverAPINotFound from e
 
 
 class MSatEnv(object):
@@ -1215,7 +1212,7 @@ if hasattr(mathsat, "MSAT_EXIST_ELIM_ALLSMT_FM"):
 
 class MSatInterpolator(Interpolator):
 
-    LOGICS = [QF_UFLIA, QF_UFLRA, QF_BV]
+    LOGICS = [QF_UFLIA, QF_UFLRA, QF_BV, QF_LIRA]
 
     def __init__(self, env, logic=None):
         Interpolator.__init__(self)

@@ -176,7 +176,7 @@ class TheoryOracle(walkers.DagWalker):
     @walkers.handles(op.RELATIONS)
     @walkers.handles(op.BOOL_OPERATORS)
     @walkers.handles(op.BV_OPERATORS)
-    @walkers.handles(op.STR_OPERATORS -\
+    @walkers.handles(op.STR_OPERATORS -
                      set([op.STR_LENGTH, op.STR_INDEXOF, op.STR_TO_INT]))
     @walkers.handles(op.ITE, op.ARRAY_SELECT, op.ARRAY_STORE, op.MINUS)
     def walk_combine(self, formula, args, **kwargs):
