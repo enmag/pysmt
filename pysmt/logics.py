@@ -285,25 +285,24 @@ class Logic(object):
 # Logics
 
 QF_BOOL = Logic(name="QF_BOOL",
-                description=\
+                description=
                 """The simplest logic: quantifier-free boolean logic.""",
                 quantifier_free=True)
 
 BOOL = Logic(name="BOOL",
-             description=\
-             """Quantified boolean logic.""")
-QBF=BOOL # Provide additional name for consistency with literature
+             description="""Quantified boolean logic.""")
+QBF = BOOL  # Provide additional name for consistency with literature
 
 
 QF_BOOLt = Logic(name="QF_BOOLt",
-                description=\
-                """Quantifier-free boolean logic with custom sorts.""",
+                 description=
+                 """Quantifier-free boolean logic with custom sorts.""",
                  quantifier_free=True,
                  custom_type=True)
 
 
 AUFLIA = Logic(name="AUFLIA",
-               description=\
+               description=
 """Closed formulas over the theory of linear integer arithmetic and
 arrays extended with free sort and function symbols but restricted to
 arrays with integer indices and values.""",
@@ -312,7 +311,7 @@ arrays with integer indices and values.""",
                uninterpreted=True)
 
 ALIA = Logic(name="ALIA",
-             description=\
+             description=
 """Closed formulas over the theory of linear integer arithmetic and
 arrays.""",
              arrays=True,
@@ -320,9 +319,9 @@ arrays.""",
 
 
 AUFLIRA = Logic(name="AUFLIRA",
-                description=\
+                description=
 """Closed linear formulas with free sort and function symbols over
-one- and two-dimentional arrays of integer index and real value.""",
+one- and two-dimensional arrays of integer index and real value.""",
                 arrays=True,
                 integer_arithmetic=True,
                 real_arithmetic=True,
@@ -341,14 +340,12 @@ theory of arrays of arrays of integer index and real value.""",
 
 
 LRA = Logic(name="LRA",
-            description=\
-"""Closed linear formulas in linear real arithmetic.""",
+            description="""Closed linear formulas in linear real arithmetic.""",
             real_arithmetic=True)
 
 
 LIA = Logic(name="LIA",
-            description=\
-"""Closed linear formulas in linear integer arithmetic.""",
+            description="""Closed linear formulas in linear integer arithmetic.""",
             integer_arithmetic=True)
 
 QF_LIRA = Logic(name="QF_LIRA",
@@ -362,7 +359,7 @@ QF_LIRA = Logic(name="QF_LIRA",
 
 
 UFLIRA = Logic(name="UFLIRA",
-                description=\
+                description=
 """Closed linear formulas with free sort and function symbols in
 linear and real arithmetic.""",
                 integer_arithmetic=True,
@@ -372,7 +369,7 @@ linear and real arithmetic.""",
 
 
 QF_UFLIRA = Logic(name="QF_UFLIRA",
-                description=\
+                description=
 """Quantifier-free, closed linear formulas with free sort and function symbols in
 linear and real arithmetic.""",
                 integer_arithmetic=True,
@@ -383,21 +380,19 @@ linear and real arithmetic.""",
 
 
 NIA = Logic(name="NIA",
-            description=\
-"""Closed formulas in non-linear integer arithmetic.""",
+            description="""Closed formulas in non-linear integer arithmetic.""",
             integer_arithmetic=True,
             linear=False)
 
 
 NRA = Logic(name="NRA",
-            description=\
-"""Closed formulas in non-linear real arithmetic.""",
+            description="""Closed formulas in non-linear real arithmetic.""",
             real_arithmetic=True,
             linear=False)
 
 
 QF_ABV = Logic(name="QF_ABV",
-               description=\
+               description=
 """Closed quantifier-free formulas over the theory of bitvectors and
 bitvector arrays.""",
                quantifier_free=True,
@@ -406,7 +401,7 @@ bitvector arrays.""",
 
 
 QF_AUFBV = Logic(name="QF_AUFBV",
-                 description=\
+                 description=
 """Closed quantifier-free formulas over the theory of bitvectors and
 bitvector arrays extended with free sort and function symbols.""",
                  quantifier_free=True,
@@ -416,7 +411,7 @@ bitvector arrays extended with free sort and function symbols.""",
 
 
 QF_AUFLIA = Logic(name="QF_AUFLIA",
-                  description=\
+                  description=
 """Closed quantifier-free linear formulas over the theory of integer
 arrays extended with free sort and function symbols.""",
                   quantifier_free=True,
@@ -426,7 +421,7 @@ arrays extended with free sort and function symbols.""",
 
 
 QF_ALIA = Logic(name="QF_ALIA",
-                description=\
+                description=
 """Closed quantifier-free linear formulas over the theory of integer
 arrays.""",
                 quantifier_free=True,
@@ -435,7 +430,7 @@ arrays.""",
 
 
 QF_AX = Logic(name="QF_AX",
-              description=\
+              description=
 """Closed quantifier-free formulas over the theory of arrays with
 extensionality.""",
               quantifier_free=True,
@@ -443,27 +438,27 @@ extensionality.""",
 
 
 QF_BV = Logic(name="QF_BV",
-              description=\
+              description=
 """Closed quantifier-free formulas over the theory of fixed-size
 bitvectors.""",
               quantifier_free=True,
               bit_vectors=True)
 
 BV = Logic(name="BV",
-           description=\
+           description=
 """Closed formulas over the theory of fixed-size
 bitvectors.""",
            bit_vectors=True)
 
 UFBV = Logic(name="UFBV",
-             description=\
+             description=
 """Closed formulas over the theory of fixed-size bitvectors
  and uninterpreted functions.""",
              bit_vectors=True,
              uninterpreted=True)
 
 QF_IDL = Logic(name="QF_IDL",
-               description=\
+               description=
 """Difference Logic over the integers. In essence, Boolean
 combinations of inequations of the form x - y < b where x and y are
 integer variables and b is an integer constant.""",
@@ -473,7 +468,7 @@ integer variables and b is an integer constant.""",
 
 
 QF_LIA = Logic(name="QF_LIA",
-               description=\
+               description=
 """Unquantified linear integer arithmetic. In essence, Boolean
 combinations of inequations between linear polynomials over integer
 variables.""",
@@ -482,7 +477,7 @@ variables.""",
 
 
 QF_LRA = Logic(name="QF_LRA",
-               description=\
+               description=
 """Unquantified linear real arithmetic. In essence, Boolean
 combinations of inequations between linear polynomials over real
 variables.""",
@@ -490,23 +485,27 @@ variables.""",
                real_arithmetic=True)
 
 QF_NIA = Logic(name="QF_NIA",
-               description=\
-"""Quantifier-free integer arithmetic.""",
+               description="""Quantifier-free integer arithmetic.""",
                quantifier_free=True,
                integer_arithmetic=True,
                linear=False)
 
 
 QF_NRA = Logic(name="QF_NRA",
-               description=\
-"""Quantifier-free real arithmetic.""",
+               description="""Quantifier-free real arithmetic.""",
                quantifier_free=True,
                real_arithmetic=True,
                linear=False)
 
+QF_NIRA = Logic(name="QF_NIRA",
+                description="""Quantifier-free integer and real arithmetic.""",
+                quantifier_free=True,
+                integer_arithmetic=True,
+                real_arithmetic=True,
+                linear=False)
 
 QF_RDL = Logic(name="QF_RDL",
-               description=\
+               description=
 """Difference Logic over the reals. In essence, Boolean combinations
 of inequations of the form x - y < b where x and y are real variables
 and b is a rational constant.""",
@@ -516,21 +515,21 @@ and b is a rational constant.""",
 
 
 QF_UF = Logic(name="QF_UF",
-              description=\
+              description=
 """Unquantified formulas built over a signature of uninterpreted
 (i.e., free) sort and function symbols.""",
               quantifier_free=True,
               uninterpreted=True)
 
 UF = Logic(name="UF",
-           description=\
+           description=
 """Quantified formulas built over a signature of uninterpreted
 (i.e., free) sort and function symbols.""",
            uninterpreted=True)
 
 
 QF_UFBV = Logic(name="QF_UFBV",
-                description=\
+                description=
 """Unquantified formulas over bitvectors with uninterpreted sort
 function and symbols.""",
                 quantifier_free=True,
@@ -539,7 +538,7 @@ function and symbols.""",
 
 
 QF_UFIDL = Logic(name="QF_UFIDL",
-                 description=\
+                 description=
 """Difference Logic over the integers (in essence) but with
 uninterpreted sort and function symbols?""",
                  quantifier_free=True,
@@ -558,7 +557,7 @@ function symbols.""",
 
 
 QF_UFLRA = Logic(name="QF_UFLRA",
-                 description=\
+                 description=
 """Unquantified linear real arithmetic with uninterpreted sort and
 function symbols.""",
                  quantifier_free=True,
@@ -567,7 +566,7 @@ function symbols.""",
 
 
 QF_UFNRA = Logic(name="QF_UFNRA",
-                 description=\
+                 description=
 """Unquantified non-linear real arithmetic with uninterpreted sort and
 function symbols.""",
                  quantifier_free=True,
@@ -577,7 +576,7 @@ function symbols.""",
 
 
 QF_UFNIA = Logic(name="QF_UFNIA",
-                 description=\
+                 description=
 """Unquantified non-linear integer arithmetic with uninterpreted sort and
 function symbols.""",
                  quantifier_free=True,
@@ -587,7 +586,7 @@ function symbols.""",
 
 
 UFLRA = Logic(name="UFLRA",
-              description=\
+              description=
 """Linear real arithmetic with uninterpreted sort and function
 symbols.""",
               real_arithmetic=True,
@@ -595,7 +594,7 @@ symbols.""",
 
 
 UFNIA = Logic(name="UFNIA",
-              description=\
+              description=
 """Non-linear integer arithmetic with uninterpreted sort and function
 symbols.""",
               integer_arithmetic=True,
@@ -605,7 +604,7 @@ symbols.""",
 
 
 QF_SLIA = Logic(name="QF_SLIA",
-                description=\
+                description=
                 """Extension of LIA including theory of Strings.""",
                 integer_arithmetic=True,
                 quantifier_free=True,
@@ -614,7 +613,7 @@ QF_SLIA = Logic(name="QF_SLIA",
 
 
 QF_AUFBVLIRA = Logic(name="QF_AUFBVLIRA",
-                     description=\
+                     description=
                      """Quantifier free Arrays, Bitvectors and LIRA""",
                      linear=True,
                      uninterpreted=True,
@@ -628,42 +627,42 @@ QF_AUFBVLIRA = Logic(name="QF_AUFBVLIRA",
 AUTO = Logic(name="Auto",
              description="Special logic used to indicate that the logic to be used depends on the formula.")
 
-SMTLIB2_LOGICS = frozenset([ AUFLIA,
-                             AUFLIRA,
-                             AUFNIRA,
-                             ALIA,
-                             LRA,
-                             LIA,
-                             NIA,
-                             NRA,
-                             UFLRA,
-                             UFNIA,
-                             UFLIRA,
-                             QF_ABV,
-                             QF_AUFBV,
-                             QF_AUFLIA,
-                             QF_ALIA,
-                             QF_AX,
-                             QF_BV,
-                             QF_IDL,
-                             QF_LIA,
-                             QF_LRA,
-                             QF_LIRA,
-                             QF_NIA,
-                             QF_NRA,
-                             QF_RDL,
-                             QF_UF,
-                             QF_UFBV ,
-                             QF_UFIDL,
-                             QF_UFLIA,
-                             QF_UFLRA,
-                             QF_UFNRA,
-                             QF_UFNIA,
-                             QF_UFLIRA,
-                             QF_SLIA
-                         ])
+SMTLIB2_LOGICS = frozenset([AUFLIA,
+                            AUFLIRA,
+                            AUFNIRA,
+                            ALIA,
+                            LRA,
+                            LIA,
+                            NIA,
+                            NRA,
+                            UFLRA,
+                            UFNIA,
+                            UFLIRA,
+                            QF_ABV,
+                            QF_AUFBV,
+                            QF_AUFLIA,
+                            QF_ALIA,
+                            QF_AX,
+                            QF_BV,
+                            QF_IDL,
+                            QF_LIA,
+                            QF_LRA,
+                            QF_LIRA,
+                            QF_NIA,
+                            QF_NRA,
+                            QF_RDL,
+                            QF_UF,
+                            QF_UFBV,
+                            QF_UFIDL,
+                            QF_UFLIA,
+                            QF_UFLRA,
+                            QF_UFNRA,
+                            QF_UFNIA,
+                            QF_UFLIRA,
+                            QF_SLIA
+                            ])
 
-LOGICS = SMTLIB2_LOGICS | frozenset([QF_BOOL, BOOL, QF_AUFBVLIRA])
+LOGICS = SMTLIB2_LOGICS | frozenset([QF_BOOL, BOOL, QF_AUFBVLIRA, QF_NIRA])
 
 QF_LOGICS = frozenset(_l for _l in LOGICS if _l.quantifier_free)
 
@@ -678,8 +677,8 @@ PYSMT_LOGICS = frozenset([QF_BOOL, QF_IDL, QF_LIA, QF_LRA, QF_RDL, QF_UF, QF_UFI
                           QF_BV, QF_UFBV,
                           QF_ABV, QF_AUFBV, QF_AUFLIA, QF_ALIA, QF_AX,
                           QF_AUFBVLIRA,
-                          QF_NRA, QF_NIA, UFBV, BV,
-                      ])
+                          QF_NRA, QF_NIA, QF_NIRA, UFBV, BV,
+                          ])
 
 # PySMT Logics includes additional features:
 #  - constant arrays: QF_AUFBV  becomes QF_AUFBV*
@@ -707,7 +706,6 @@ for l in PYSMT_LOGICS:
         ext_logics.add(nl)
 
 
-
 LOGICS = LOGICS | frozenset(ext_logics)
 PYSMT_LOGICS = PYSMT_LOGICS | frozenset(ext_logics)
 
@@ -716,14 +714,15 @@ PYSMT_QF_LOGICS = frozenset(_l for _l in PYSMT_LOGICS if _l.quantifier_free)
 
 BV_LOGICS = frozenset(_l for _l in PYSMT_LOGICS if _l.theory.bit_vectors)
 ARRAYS_LOGICS = frozenset(_l for _l in PYSMT_LOGICS if _l.theory.arrays)
-ARRAYS_CONST_LOGICS = frozenset(_l for _l in PYSMT_LOGICS \
+ARRAYS_CONST_LOGICS = frozenset(_l for _l in PYSMT_LOGICS
                                 if _l.theory.arrays_const)
 
 
 def get_logic_by_name(name):
     """Returns the Logic that matches the provided name."""
     for logic in LOGICS:
-        if logic.name.lower() == name.lower(): return logic
+        if logic.name.lower() == name.lower():
+            return logic
     raise UndefinedLogicError(name)
 
 
@@ -786,7 +785,7 @@ def most_generic_logic(logics):
 
     If a unique most generic logic does not exists, throw an error.
     """
-    res = [ l for l in logics if all(l >= x for x in logics)]
+    res = [l for l in logics if all(l >= x for x in logics)]
     if len(res) != 1:
         raise NoLogicAvailableError("Could not find the most generic "
                                     "logic for %s." % str(logics))
