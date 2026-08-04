@@ -340,6 +340,8 @@ class Z3Converter(Converter, DagWalker):
             z3.Z3_OP_IMPLIES: lambda args, expr: self.mgr.Implies(args[0], args[1]),
             z3.Z3_OP_ITE: lambda args, expr: self.mgr.Ite(args[0], args[1], args[2]),
             z3.Z3_OP_TO_REAL: lambda args, expr: self.mgr.ToReal(args[0]),
+            z3.Z3_OP_TO_INT: lambda args, expr: self.mgr.ToInt(args[0]),
+            z3.Z3_OP_IS_INT: lambda args, expr: self.mgr.IsInt(args[0]),
             z3.Z3_OP_BAND : lambda args, expr: self.mgr.BVAnd(args),
             z3.Z3_OP_BOR : lambda args, expr: self.mgr.BVOr(args),
             z3.Z3_OP_BXOR : lambda args, expr: self.mgr.BVXor(args[0], args[1]),
@@ -734,6 +736,11 @@ class Z3Converter(Converter, DagWalker):
 
     def walk_toreal(self, formula, args, **kwargs):
         z3term = z3.Z3_mk_int2real(self.ctx.ref(), args[0])
+        z3.Z3_inc_ref(self.ctx.ref(), z3term)
+        return z3term
+
+    def walk_toint(self, formula, args, **kwargs):
+        z3term = z3.Z3_mk_real2int(self.ctx.ref(), args[0])
         z3.Z3_inc_ref(self.ctx.ref(), z3term)
         return z3term
 

@@ -199,6 +199,8 @@ class HRLexer(Lexer):
             "ZEXT": InfixOpAdapter(self.BVHack(self.mgr.BVZExt), 90),# BVZext
             "SEXT": InfixOpAdapter(self.BVHack(self.mgr.BVSExt), 90),# BVSext
             "ToReal": UnaryOpAdapter(self.mgr.ToReal, 100),#
+            "ToInt": UnaryOpAdapter(self.mgr.ToInt, 100),#
+            "IsInt": UnaryOpAdapter(self.mgr.IsInt, 100),#
             "Int": IntTypeTok(),# Int Type
             "Real": RealTypeTok(),# Real Type
             "Bool": BoolTypeTok(),# Bool Type

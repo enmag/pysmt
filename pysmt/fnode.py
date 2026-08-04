@@ -29,7 +29,7 @@ from pysmt.operators import (FORALL, EXISTS, AND, OR, NOT, IMPLIES, IFF,
                              PLUS, MINUS, TIMES, DIV,
                              LE, LT, EQUALS,
                              ITE,
-                             TOREAL,
+                             TOREAL, TOINT,
                              BV_CONSTANT, BV_NOT, BV_AND, BV_OR, BV_XOR,
                              BV_CONCAT, BV_EXTRACT,
                              BV_ULT, BV_ULE, BV_NEG, BV_ADD, BV_SUB,
@@ -255,6 +255,10 @@ class FNode(object):
     def is_toreal(self) -> bool:
         """Test whether the node is the ToReal operator."""
         return self.node_type() == TOREAL
+
+    def is_toint(self) -> bool:
+        """Test whether the node is the ToInt operator."""
+        return self.node_type() == TOINT
 
     def is_forall(self) -> bool:
         """Test whether the node is the ForAll operator."""

@@ -351,6 +351,9 @@ class CVC4Converter(Converter, DagWalker):
     def walk_toreal(self, formula, args, **kwargs):
         return self.mkExpr(CVC4.TO_REAL, args[0])
 
+    def walk_toint(self, formula, args, **kwargs):
+        return self.mkExpr(CVC4.TO_INTEGER, args[0])
+
     def walk_function(self, formula, args, **kwargs):
         name = formula.function_name()
         if name not in self.declared_vars:

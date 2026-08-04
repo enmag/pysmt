@@ -463,6 +463,16 @@ class Simplifier(pysmt.walkers.DagWalker):
             return self.manager.Real(cast(int, args[0].constant_value()))
         return self.manager.ToReal(args[0])
 
+    def walk_toint(self, formula: FNode, args: List[FNode], **kwargs) -> FNode:
+        assert len(args) == 1
+        if args[0].is_toreal():
+            # to_int(to_real(x)) is x, since x is an integer.
+            # Note that the converse does not hold: to_real(to_int(y)) is
+            # y only when y happens to have an integer value.
+            return args[0].arg(0)
+        # Folding of real constants is done by the FormulaManager
+        return self.manager.ToInt(args[0])
+
     def walk_bv_and(self, formula: FNode, args: List[FNode], **kwargs) -> FNode:
         simplified = None
         width = formula.bv_width()

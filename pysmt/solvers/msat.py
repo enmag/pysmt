@@ -427,6 +427,7 @@ class MSatConverter(Converter, DagWalker):
             self._msat_lib.MSAT_TAG_BV_LSHR: self._back_adapter(self.mgr.BVLShr),
             self._msat_lib.MSAT_TAG_BV_ASHR: self._back_adapter(self.mgr.BVAShr),
             self._msat_lib.MSAT_TAG_BV_COMP: self._back_adapter(self.mgr.BVComp),
+            self._msat_lib.MSAT_TAG_FLOOR: self._back_adapter(self.mgr.ToInt),
             self._msat_lib.MSAT_TAG_INT_FROM_UBV: self._back_adapter(self.mgr.BVToNatural),
             self._msat_lib.MSAT_TAG_ARRAY_READ: self._back_adapter(self.mgr.Select),
             self._msat_lib.MSAT_TAG_ARRAY_WRITE: self._back_adapter(self.mgr.Store),
@@ -461,6 +462,8 @@ class MSatConverter(Converter, DagWalker):
             self._msat_lib.MSAT_TAG_LEQ: self._sig_most_generic_bool_binary,
             self._msat_lib.MSAT_TAG_PLUS:  self._sig_most_generic_bool_binary,
             self._msat_lib.MSAT_TAG_TIMES: self._sig_most_generic_bool_binary,
+            self._msat_lib.MSAT_TAG_FLOOR: lambda term, args:\
+                types.FunctionType(types.INT, [types.REAL]),
             self._msat_lib.MSAT_TAG_BV_MUL: self._sig_binary,
             self._msat_lib.MSAT_TAG_BV_ADD: self._sig_binary,
             self._msat_lib.MSAT_TAG_BV_UDIV:self._sig_binary,
@@ -1003,6 +1006,9 @@ class MSatConverter(Converter, DagWalker):
     def walk_toreal(self, formula: FNode, args: List[Any], **kwargs) -> Any:
         # In mathsat toreal is implicit
         return args[0]
+
+    def walk_toint(self, formula: FNode, args: List[Any], **kwargs) -> Any:
+        return self._msat_lib.msat_make_floor(self.msat_env(), args[0])
 
     def walk_bv_tonatural(self, formula: FNode, args: List[Any], **kwargs) -> Any:
         return self._msat_lib.msat_make_int_from_ubv(self.msat_env(), args[0])

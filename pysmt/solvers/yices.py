@@ -470,6 +470,11 @@ class YicesConverter(Converter, DagWalker):
     def walk_toreal(self, formula: FNode, args, **kwargs):
         return args[0]
 
+    def walk_toint(self, formula: FNode, args, **kwargs):
+        res = yices_api.yices_floor(args[0])
+        self._check_term_result(res)
+        return res
+
     def walk_function(self, formula: FNode, args, **kwargs):
         name = formula.function_name()
         if name not in self.symbol_to_decl:
