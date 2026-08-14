@@ -20,7 +20,7 @@ from io import StringIO
 from pysmt.shortcuts import Or, And, Not, Plus, Iff, Implies
 from pysmt.shortcuts import Exists, ForAll, Ite, ExactlyOne
 from pysmt.shortcuts import Bool, Real, Int, Symbol, Function
-from pysmt.shortcuts import Times, Minus, Equals, LE, LT, ToReal, FreshSymbol
+from pysmt.shortcuts import Times, Minus, Equals, LE, LT, ToReal, ToInt, FreshSymbol
 from pysmt.typing import REAL, INT, FunctionType
 from pysmt.smtlib.printers import SmtPrinter, SmtDagPrinter
 from pysmt.smtlib.annotations import Annotations
@@ -138,6 +138,14 @@ class TestPrinting(TestCase):
 
         self.assertEqual(rp.to_smtlib(daggify=False), "(to_real p)")
         self.assertEqual(rp.to_smtlib(daggify=True), "(let ((.def_0 (to_real p))) .def_0)")
+
+    def test_toint(self):
+        r = Symbol("r", REAL)
+        ir = ToInt(r)
+
+        self.assertEqual(ir.to_smtlib(daggify=False), "(to_int r)")
+        self.assertEqual(ir.to_smtlib(daggify=True), "(let ((.def_0 (to_int r))) .def_0)")
+        self.assertEqual(ir.serialize(), "ToInt(r)")
 
     def test_threshold_printing(self):
         x = Symbol("x")

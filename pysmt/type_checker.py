@@ -79,6 +79,11 @@ class SimpleTypeChecker(walkers.DagWalker):
         #pylint: disable=unused-argument
         return self.walk_type_to_type(formula, args, INT, REAL)
 
+    @walkers.handles(op.TOINT)
+    def walk_real_to_int(self, formula: FNode, args: List[PySMTType], **kwargs) -> Optional[PySMTType]:
+        #pylint: disable=unused-argument
+        return self.walk_type_to_type(formula, args, REAL, INT)
+
     def walk_real_to_real(self, formula: FNode, args: List[PySMTType], **kwargs) -> Optional[PySMTType]:
         #pylint: disable=unused-argument
         return self.walk_type_to_type(formula, args, REAL, REAL)

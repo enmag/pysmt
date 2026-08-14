@@ -114,6 +114,9 @@ class IdentityDagWalker(DagWalker):
     def walk_toreal(self, formula: FNode, args: List[FNode], **kwargs) -> FNode:
         return self.mgr.ToReal(args[0])
 
+    def walk_toint(self, formula: FNode, args: List[FNode], **kwargs) -> FNode:
+        return self.mgr.ToInt(args[0])
+
     def walk_bv_constant(self, formula: FNode, **kwargs) -> FNode:
         return self.mgr.BV(cast(int, formula.constant_value()), formula.bv_width())
 

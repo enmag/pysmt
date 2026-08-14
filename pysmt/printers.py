@@ -177,6 +177,11 @@ class HRPrinter(TreeWalker):
         yield formula.arg(0)
         self.write(")")
 
+    def walk_toint(self, formula: FNode) -> Iterator[FNode]:
+        self.write("ToInt(")
+        yield formula.arg(0)
+        self.write(")")
+
     def walk_str_constant(self, formula: FNode):
         formula_value = formula.constant_value()
         assert isinstance(formula_value, str), \

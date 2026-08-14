@@ -118,6 +118,7 @@ class TestSMTParseExamples(TestCase):
             logics.QF_BOOL: logics.QF_UF,
             logics.BOOL: logics.LRA,
             logics.QF_NIRA: logics.AUFNIRA,
+            logics.QF_LIRA: logics.QF_UFLIRA,
         }
         fs = get_example_formulae()
 

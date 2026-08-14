@@ -23,7 +23,7 @@ from pysmt.shortcuts import (Symbol, Function,
                              Int, Real, FALSE, TRUE,
                              And, Iff, Or, Not, Implies, Ite,
                              LT, LE, GT, GE,
-                             Times, Pow, Equals, Plus, Minus, Div, ToReal,
+                             Times, Pow, Equals, Plus, Minus, Div, ToReal, ToInt,
                              ForAll, Exists,
                              BV, SBV, BVOne, BVZero,
                              BVNot, BVAnd, BVOr, BVXor,
@@ -697,6 +697,32 @@ def get_full_example_formulae(environment: Optional[Environment]=None) -> List[E
                     is_valid=False,
                     is_sat=False,
                     logic=pysmt.logics.QF_UFLIRA
+                ),
+
+            # ToInt is the floor, hence it rounds towards minus infinity
+            Example(hr="((r = -3/2) -> (ToInt(r) = -2))",
+                    expr=Implies(Equals(r, Real(Fraction(-3, 2))),
+                                 Equals(ToInt(r), Int(-2))),
+                    is_valid=True,
+                    is_sat=True,
+                    logic=pysmt.logics.QF_LIRA
+                ),
+
+            # ToInt must not truncate towards zero
+            Example(hr="((r = -3/2) & (ToInt(r) = -1))",
+                    expr=And(Equals(r, Real(Fraction(-3, 2))),
+                             Equals(ToInt(r), Int(-1))),
+                    is_valid=False,
+                    is_sat=False,
+                    logic=pysmt.logics.QF_LIRA
+                ),
+
+            Example(hr="((ToInt(r) = p) & (0.0 < r))",
+                    expr=And(Equals(ToInt(r), p),
+                             GT(r, Real(0))),
+                    is_valid=False,
+                    is_sat=True,
+                    logic=pysmt.logics.QF_LIRA
                 ),
             #
             # STR

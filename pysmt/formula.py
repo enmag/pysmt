@@ -493,6 +493,44 @@ class FormulaManager(object):
             raise PysmtTypeError("Argument is of type %s, but INT was "
                                  "expected!\n" % t)
 
+    def ToInt(self, formula: FNode) -> FNode:
+        """ Cast a formula to integer type.
+
+        This is the SMT-LIB to_int function, i.e. the floor: it rounds
+        towards minus infinity, hence ToInt(-3/2) is -2 and not -1.
+        """
+        t = self.env.stc.get_type(formula)
+        if t == types.INT:
+            # Ignore casting of an Int
+            return formula
+        elif t == types.REAL:
+            if formula.is_real_constant():
+                value = cast(fractions.Fraction, formula.constant_value())
+                # Floor division on the numerator/denominator, so that this
+                # also works for the gmpy2 mpq backend (see pysmt.constants)
+                return self.Int(value.numerator // value.denominator)
+            return self.create_node(node_type=op.TOINT,
+                                    args=(formula,))
+        else:
+            raise PysmtTypeError("Argument is of type %s, but REAL was "
+                                 "expected!\n" % t)
+
+    def IsInt(self, formula: FNode) -> FNode:
+        """ Returns whether the given real formula has an integer value.
+
+        This is the SMT-LIB is_int predicate, expanded into its SMT-LIB
+        definition: (is_int t) is (= t (to_real (to_int t))).
+        """
+        t = self.env.stc.get_type(formula)
+        if t == types.INT:
+            # An Int is always an integer
+            return self.TRUE()
+        elif t == types.REAL:
+            return self.Equals(formula, self.ToReal(self.ToInt(formula)))
+        else:
+            raise PysmtTypeError("Argument is of type %s, but REAL was "
+                                 "expected!\n" % t)
+
     def AtMostOne(self, *args: Union[FNode, Iterable[FNode]]) -> FNode:
         """ At most one of the bool expressions can be true at anytime.
 

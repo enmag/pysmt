@@ -246,6 +246,12 @@ class TheoryOracle(walkers.DagWalker):
         """Extends the Theory with LIRA."""
         theory_out = args[0].set_lira() # This makes a copy of args[0]
         return theory_out
+
+    def walk_toint(self, formula: FNode, args: List[Theory], **kwargs) -> Theory:
+        #pylint: disable=unused-argument
+        """Extends the Theory with LIRA."""
+        theory_out = args[0].set_lira() # This makes a copy of args[0]
+        return theory_out
         rtype = formula.symbol_name()
 
     @walkers.handles([op.STR_LENGTH, op.STR_INDEXOF, op.STR_TO_INT])

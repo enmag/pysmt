@@ -361,6 +361,19 @@ def ToReal(formula: FNode) -> FNode:
     return get_env().formula_manager.ToReal(formula)
 
 
+def ToInt(formula: FNode) -> FNode:
+    """Explicit cast of a term into an Int term.
+
+    This is the SMT-LIB to_int function, i.e. the floor.
+    """
+    return get_env().formula_manager.ToInt(formula)
+
+
+def IsInt(formula: FNode) -> FNode:
+    """Returns whether the given real term has an integer value."""
+    return get_env().formula_manager.IsInt(formula)
+
+
 def AtMostOne(*args: Union[FNode, Iterable[FNode]]) -> FNode:
     """At most one can be true at anytime.
 

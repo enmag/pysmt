@@ -16,9 +16,11 @@
 #   limitations under the License.
 #
 from pysmt.shortcuts import *
+from pysmt.constants import Fraction
+from pysmt.exceptions import PysmtTypeError
 from pysmt.typing import INT, REAL, FunctionType
 from pysmt.test import TestCase, main
-from pysmt.logics import QF_UFLIRA, UFLIRA
+from pysmt.logics import QF_LIRA, QF_UFLIRA, UFLIRA
 
 class TestLIRA(TestCase):
 
@@ -45,6 +47,80 @@ class TestLIRA(TestCase):
         self.assertEqual(ToReal(b), ToReal(ToReal(b)))
         self.assertEqual(ToReal(Plus(b, Int(1))),
                           ToReal(ToReal(Plus(b, Int(1)))))
+
+
+    def test_toint_is_floor(self):
+        # to_int rounds towards minus infinity, it does not truncate
+        self.assertEqual(ToInt(Real(Fraction(-3, 2))), Int(-2))
+        self.assertEqual(ToInt(Real(Fraction(3, 2))), Int(1))
+        self.assertEqual(ToInt(Real(Fraction(-1, 3))), Int(-1))
+        self.assertEqual(ToInt(Real(0)), Int(0))
+        self.assertEqual(ToInt(Real(-2)), Int(-2))
+
+
+    def test_toint(self):
+        a = Symbol("a", REAL)
+        b = Symbol("b", INT)
+
+        # Casting an Int is a no-op
+        self.assertEqual(b, ToInt(b))
+        self.assertEqual(Plus(b, Int(1)), ToInt(Plus(b, Int(1))))
+
+        self.assertTrue(ToInt(a).is_toint())
+        self.assertEqual(get_type(ToInt(a)), INT)
+
+        for bad in (TRUE(), Symbol("x"), BV(1, 8)):
+            with self.assertRaises(PysmtTypeError):
+                ToInt(bad)
+
+
+    def test_toint_simplify(self):
+        a = Symbol("a", REAL)
+        b = Symbol("b", INT)
+
+        # to_int(to_real(b)) is b, since b is an integer
+        self.assertEqual(b, ToInt(ToReal(b)).simplify())
+        self.assertEqual(Plus(b, Int(1)),
+                         ToInt(ToReal(Plus(b, Int(1)))).simplify())
+
+        # The converse does NOT hold: to_real(to_int(a)) is a only when a
+        # happens to have an integer value.
+        self.assertNotEqual(a, ToReal(ToInt(a)).simplify())
+
+
+    def test_isint(self):
+        a = Symbol("a", REAL)
+        b = Symbol("b", INT)
+
+        # is_int is expanded into its SMT-LIB definition
+        self.assertEqual(IsInt(a), Equals(a, ToReal(ToInt(a))))
+        # An Int is trivially an integer
+        self.assertEqual(IsInt(b), TRUE())
+
+        with self.assertRaises(PysmtTypeError):
+            IsInt(TRUE())
+
+
+    def test_toint_solving(self):
+        a = Symbol("a", REAL)
+
+        for sname in get_env().factory.all_solvers(logic=QF_LIRA):
+            # 7/2 floors to 3
+            self.assertSat(And(Equals(a, Real(Fraction(7, 2))),
+                               Equals(ToInt(a), Int(3))),
+                           solver_name=sname)
+            # -3/2 floors to -2, and in particular not to -1
+            self.assertSat(And(Equals(a, Real(Fraction(-3, 2))),
+                               Equals(ToInt(a), Int(-2))),
+                           solver_name=sname)
+            self.assertUnsat(And(Equals(a, Real(Fraction(-3, 2))),
+                                 Equals(ToInt(a), Int(-1))),
+                             solver_name=sname)
+            # 1/2 is not an integer
+            self.assertUnsat(And(IsInt(a), Equals(a, Real(Fraction(1, 2)))),
+                             solver_name=sname)
+            self.assertSat(And(IsInt(a), Equals(a, Real(Fraction(4, 2)))),
+                           solver_name=sname)
 
 
     def test_uflira(self):
