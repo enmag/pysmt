@@ -25,10 +25,12 @@ from pysmt.test import TestCase, skipIfNoSolverForLogic, main
 from pysmt.test.examples import get_example_formulae
 from pysmt.smtlib.parser import SmtLibParser, Tokenizer
 from pysmt.smtlib.script import smtlibscript_from_formula
-from pysmt.shortcuts import Iff
+from pysmt.shortcuts import Iff, Symbol, And, Implies, Xor, LT, GE, Equals, \
+    Plus, Minus, Times, Div, AllDifferent, BVXor, BVConcat
 from pysmt.shortcuts import read_smtlib, write_smtlib, get_env
 from pysmt.exceptions import PysmtSyntaxError
-from pysmt.typing import INT
+from pysmt.smtlib.commands import ASSERT
+from pysmt.typing import INT, REAL, BV8
 
 
 class TestSMTParseExamples(TestCase):
@@ -260,6 +262,75 @@ class TestSMTParseExamples(TestCase):
             self.assertEqual(self._parse_assertion(decls, nary),
                              self._parse_assertion(decls, expected),
                              "wrong expansion of %s" % nary)
+
+    def test_nary_operators_end_to_end(self):
+        """Parse a whole SMT-LIB2 script using the n-ary operators and check
+        the resulting formulae against the ones built with the pySMT API"""
+        script = """
+        ; no set-logic: no pySMT logic covers BV + non-linear Int/Real at once
+        (declare-fun a () Int)
+        (declare-fun b () Int)
+        (declare-fun c () Int)
+        (declare-fun r () Real)
+        (declare-fun s () Real)
+        (declare-fun t () Real)
+        (declare-fun p () Bool)
+        (declare-fun q () Bool)
+        (declare-fun u () Bool)
+        (declare-fun x () (_ BitVec 8))
+        (declare-fun y () (_ BitVec 8))
+        (declare-fun z () (_ BitVec 8))
+        (assert (< a b c))
+        (assert (>= a b c))
+        (assert (= a b c))
+        (assert (= p q u))
+        (assert (= (- a b c) (+ a b c)))
+        (assert (= (div a b c) (* a b c)))
+        (assert (= (/ r s t) r))
+        (assert (=> p q u))
+        (assert (xor p q u))
+        (assert (distinct a b c))
+        (assert (= (bvxor x y z) x))
+        (assert (= (concat x y z) (concat z y x)))
+        (check-sat)
+        """
+        a, b, c = (Symbol(name, INT) for name in "abc")
+        r, s, t = (Symbol(name, REAL) for name in "rst")
+        p, q, u = (Symbol(name) for name in "pqu")
+        x, y, z = (Symbol(name, BV8) for name in "xyz")
+
+        expected = [
+            # :chainable
+            And(LT(a, b), LT(b, c)),
+            And(GE(a, b), GE(b, c)),
+            And(Equals(a, b), Equals(b, c)),
+            And(Iff(p, q), Iff(q, u)),
+            # :left-assoc ('+' and '*' stay flat n-ary)
+            Equals(Minus(Minus(a, b), c), Plus(a, b, c)),
+            Equals(Div(Div(a, b), c), Times(a, b, c)),
+            Equals(Div(Div(r, s), t), r),
+            # :right-assoc
+            Implies(p, Implies(q, u)),
+            # :left-assoc
+            Xor(Xor(p, q), u),
+            # :pairwise
+            AllDifferent(a, b, c),
+            # bit-vectors
+            Equals(BVXor(BVXor(x, y), z), x),
+            Equals(BVConcat(BVConcat(x, y), z), BVConcat(BVConcat(z, y), x)),
+        ]
+
+        parser = SmtLibParser()
+        parsed = [cmd.args[0] for cmd in
+                  parser.get_script(StringIO(script)).filter_by_command_name(ASSERT)]
+
+        self.assertEqual(len(parsed), len(expected))
+        for got, exp in zip(parsed, expected):
+            self.assertEqual(got, exp)
+        # ...and the conjunction of all of them is what the script means
+        self.assertEqual(
+            SmtLibParser().get_script(StringIO(script)).get_last_formula(),
+            And(expected))
 
     def test_nary_div_is_integer_division(self):
         """'div' is the Ints division, so it must not be promoted to Real"""
