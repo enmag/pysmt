@@ -341,7 +341,8 @@ class CVC4Converter(Converter, DagWalker):
         return self.mkExpr(CVC4.EQUAL, args[0], args[1])
 
     def walk_times(self, formula, args, **kwargs):
-        if sum(1 for x in formula.args() if x.get_free_variables()) > 1:
+        if sum(1 for x in formula.args()
+               if self.env.fvo.get_free_variables(x)) > 1:
             raise NonLinearError(formula)
         res = args[0]
         for x in args[1:]:
@@ -598,17 +599,17 @@ class CVC4Converter(Converter, DagWalker):
             # Recursively convert the types of index and elem
             idx_type = self._cvc4_type_to_type(type_.getIndexType())
             elem_type = self._cvc4_type_to_type(type_.getConstituentType())
-            return types.ArrayType(idx_type, elem_type)
+            return self.env.type_manager.ArrayType(idx_type, elem_type)
         elif type_.isBitVector():
             # Casting Type into BitVectorType
             type_ = CVC4.BitVectorType(type_)
-            return types.BVType(type_.getSize())
+            return self.env.type_manager.BVType(type_.getSize())
         elif type_.isFunction():
             # Casting Type into FunctionType
             type_ = CVC4.FunctionType(type_)
             return_type = type_.getRangeType()
             param_types = tuple(self._cvc4_type_to_type(ty) for ty in type_.getArgTypes())
-            return types.FunctionType(return_type, param_types)
+            return self.env.type_manager.FunctionType(return_type, param_types)
         else:
             raise NotImplementedError("Unsupported type: %s" % type_)
 

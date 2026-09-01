@@ -29,7 +29,7 @@ import pysmt.walkers as walkers
 import pysmt.operators as op
 import pysmt.typing as types
 
-from pysmt.typing import PySMTType, BOOL, REAL, INT, BVType, ArrayType, STRING
+from pysmt.typing import PySMTType, BOOL, REAL, INT, STRING
 from pysmt.exceptions import PysmtTypeError
 from pysmt.fnode import FNode
 
@@ -103,7 +103,7 @@ class SimpleTypeChecker(walkers.DagWalker):
     def walk_bv_to_bv(self, formula: FNode, args: List[PySMTType], **kwargs) -> Optional[PySMTType]:
         #pylint: disable=unused-argument
         # We check that all children are BV and the same size
-        target_bv_type = BVType(formula.bv_width())
+        target_bv_type = self.env.type_manager.BVType(formula.bv_width())
         for a in args:
             if not a == target_bv_type:
                 return None
@@ -134,7 +134,7 @@ class SimpleTypeChecker(walkers.DagWalker):
         a, b = args
         if a != b or (not a.is_bv_type()):
             return None
-        return BVType(1)
+        return self.env.type_manager.BVType(1)
 
     @walkers.handles(op.BV_ULT, op.BV_ULE, op.BV_SLT, op.BV_SLE)
     def walk_bv_to_bool(self, formula: FNode, args: List[PySMTType], **kwargs) -> Optional[PySMTType]:
@@ -163,7 +163,7 @@ class SimpleTypeChecker(walkers.DagWalker):
             return None
         if not l_width + r_width == target_width:
             return None
-        return BVType(target_width)
+        return self.env.type_manager.BVType(target_width)
 
     def walk_bv_extract(self, formula: FNode, args: List[PySMTType], **kwargs) -> Optional[PySMTType]:
         arg = args[0]
@@ -179,7 +179,7 @@ class SimpleTypeChecker(walkers.DagWalker):
             return None
         if target_width != (end-start+1):
             return None
-        return BVType(target_width)
+        return self.env.type_manager.BVType(target_width)
 
     @walkers.handles(op.BV_ROL, op.BV_ROR)
     def walk_bv_rotate(self, formula: FNode, args: List[PySMTType], **kwargs) -> Optional[PySMTType]:
@@ -189,7 +189,7 @@ class SimpleTypeChecker(walkers.DagWalker):
             return None
         if target_width != cast(types._BVType, args[0]).width:
             return None
-        return BVType(target_width)
+        return self.env.type_manager.BVType(target_width)
 
     @walkers.handles(op.BV_ZEXT, op.BV_SEXT)
     def walk_bv_extend(self, formula: FNode, args: List[PySMTType], **kwargs) -> Optional[PySMTType]:
@@ -197,7 +197,7 @@ class SimpleTypeChecker(walkers.DagWalker):
         target_width = formula.bv_width()
         if target_width < cast(types._BVType, args[0]).width or target_width < 0:
             return None
-        return BVType(target_width)
+        return self.env.type_manager.BVType(target_width)
 
     def walk_equals(self, formula: FNode, args: List[PySMTType], **kwargs) -> Optional[PySMTType]:
         #pylint: disable=unused-argument
@@ -257,7 +257,7 @@ class SimpleTypeChecker(walkers.DagWalker):
         #pylint: disable=unused-argument
         assert formula is not None
         assert len(args) == 0
-        return BVType(formula.bv_width())
+        return self.env.type_manager.BVType(formula.bv_width())
 
     def walk_symbol(self, formula: FNode, args: List[Any], **kwargs) -> Optional[PySMTType]:
         assert formula is not None
@@ -336,7 +336,7 @@ class SimpleTypeChecker(walkers.DagWalker):
                 return None # Wrong index type
             elif i % 2 == 1 and c != default_type:
                 return None
-        return ArrayType(idx_type, default_type)
+        return self.env.type_manager.ArrayType(idx_type, default_type)
 
     def walk_pow(self, formula: FNode, args: List[PySMTType], **kwargs) -> Optional[PySMTType]:
         if args[0] != args[1]:

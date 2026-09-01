@@ -227,7 +227,7 @@ class PicosatSolver(Solver):
     @catch_conversion_error
     def add_assertion(self, formula, named=None):
         # First, we get rid of True/False constants
-        formula = formula.simplify()
+        formula = self.environment.simplifier.simplify(formula)
         if formula.is_false():
             picosat.picosat_add(self.pico, 0)
         elif not formula.is_true():

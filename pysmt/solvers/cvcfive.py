@@ -363,7 +363,7 @@ class CVC5Converter(Converter, DagWalker):
         return self.cvc5_solver.mkTerm(Kind.SELECT, args[0], args[1])
 
     def walk_array_value(self, formula, args, **kwargs):
-        arr_sort = self._type_to_cvc5(formula.get_type())
+        arr_sort = self._type_to_cvc5(self.env.stc.get_type(formula))
         # args[0] is the converted default value
         const_arr = self.cvc5_solver.mkConstArray(arr_sort, args[0])
         # Remaining args are (index, value) pairs for point overrides
@@ -572,15 +572,15 @@ class CVC5Converter(Converter, DagWalker):
             # Recursively convert the types of index and elem
             idx_type = self._cvc5_type_to_type(type_.getArrayIndexSort())
             elem_type = self._cvc5_type_to_type(type_.getArrayElementSort())
-            return types.ArrayType(idx_type, elem_type)
+            return self.env.type_manager.ArrayType(idx_type, elem_type)
         elif type_.isBitVector():
-            return types.BVType(type_.getBitVectorSize())
+            return self.env.type_manager.BVType(type_.getBitVectorSize())
         elif type_.isFunction():
             # Casting Type into FunctionType
             type_ = cvc5.FunctionType(type_)
             return_type = type_.getRangeType()
             param_types = tuple(self._cvc5_type_to_type(ty) for ty in type_.getArgTypes())
-            return types.FunctionType(return_type, param_types)
+            return self.env.type_manager.FunctionType(return_type, param_types)
         else:
             raise NotImplementedError("Unsupported type: %s" % type_)
 

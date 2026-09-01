@@ -94,8 +94,9 @@ class ShannonQuantifierEliminator(QuantifierEliminator, IdentityDagWalker):
         self._assert_vars_boolean(qvars)
         res = []
         f = args[0]
+        substitute = self.env.substituter.substitute
         for subs in all_assignments(qvars, self.env):
-            res.append(f.substitute(subs))
+            res.append(substitute(f, subs))
         return res
 
     def walk_forall(self, formula: FNode, args: Sequence[FNode], **kwargs) -> FNode:
@@ -128,9 +129,10 @@ class SelfSubstitutionQuantifierEliminator(QuantifierEliminator, IdentityDagWalk
         return self.walk(formula)
 
     def self_substitute(self, formula: FNode, qvars: Sequence[FNode], token: FNode) -> FNode:
+        substitute = self.env.substituter.substitute
         for v in qvars[::-1]:
-            inner_sub = formula.substitute({v: token})
-            formula = formula.substitute({v: inner_sub})
+            inner_sub = substitute(formula, {v: token})
+            formula = substitute(formula, {v: inner_sub})
         return formula
 
     def walk_forall(self, formula: FNode, args: Sequence[FNode], **kwargs) -> FNode:

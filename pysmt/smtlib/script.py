@@ -54,7 +54,7 @@ def check_sat_filter(log: List[Tuple[str, Optional[Union[Model, bool, Goal, List
 
 
 class SmtLibCommand(namedtuple('SmtLibCommand', ['name', 'args'])):
-    def serialize(self, outstream: Optional[TextIO]=None, printer: Optional[PrinterType]=None, daggify: bool=True):
+    def serialize(self, outstream: Optional[TextIO]=None, printer: Optional[PrinterType]=None, daggify: bool=True, env=None):
         """Serializes the SmtLibCommand into outstream using the given printer.
 
         Exactly one of outstream or printer must be specified. When
@@ -69,9 +69,9 @@ class SmtLibCommand(namedtuple('SmtLibCommand', ['name', 'args'])):
             outstream = printer.stream
         elif (outstream is not None) and (printer is None):
             if daggify:
-                printer = SmtDagPrinter(outstream)
+                printer = SmtDagPrinter(outstream, env=env)
             else:
-                printer = SmtPrinter(outstream)
+                printer = SmtPrinter(outstream, env=env)
         else:
             assert (outstream is not None and printer is not None) or \
                    (outstream is None and printer is None), \
@@ -197,9 +197,9 @@ class SmtLibCommand(namedtuple('SmtLibCommand', ['name', 'args'])):
         else:
             raise UnknownSmtLibCommandError(self.name)
 
-    def serialize_to_string(self, daggify: bool=True) -> str:
+    def serialize_to_string(self, daggify: bool=True, env=None) -> str:
         buf = StringIO()
-        self.serialize(buf, daggify=daggify)
+        self.serialize(buf, daggify=daggify, env=env)
         return buf.getvalue()
 
 
@@ -336,19 +336,19 @@ class SmtLibScript(object):
             return mgr.And(stack), tuple(goals)
         return mgr.And(stack)
 
-    def to_file(self, fname, daggify=True):
+    def to_file(self, fname, daggify=True, env=None):
         with open(fname, "w") as outstream:
-            self.serialize(outstream, daggify=daggify)
+            self.serialize(outstream, daggify=daggify, env=env)
 
-    def serialize(self, outstream: Union[TextIOWrapper, StringIO], daggify: bool=True):
+    def serialize(self, outstream: Union[TextIOWrapper, StringIO], daggify: bool=True, env=None):
         """Serializes the SmtLibScript expanding commands"""
         if daggify:
-            printer: PrinterType = SmtDagPrinter(outstream, annotations=self.annotations)
+            printer: PrinterType = SmtDagPrinter(outstream, env=env, annotations=self.annotations)
         else:
-            printer = SmtPrinter(outstream, annotations=self.annotations)
+            printer = SmtPrinter(outstream, env=env, annotations=self.annotations)
 
         for cmd in self.commands:
-            cmd.serialize(printer=printer)
+            cmd.serialize(printer=printer, env=env)
             outstream.write("\n")
 
     def __len__(self) -> int:
@@ -375,12 +375,14 @@ def _command_is_signed(command: SmtLibCommand) -> bool:
     return singed
 
 
-def smtlibscript_from_formula(formula: FNode, logic: Optional[Union[str, int, Logic]]=None) -> SmtLibScript:
+def smtlibscript_from_formula(formula: FNode, logic: Optional[Union[str, int, Logic]]=None, env=None) -> SmtLibScript:
     script = SmtLibScript()
+    if env is None:
+        env = get_env()
 
     if logic is None:
         # Get the simplest SmtLib logic that contains the formula
-        f_logic = get_logic(formula)
+        f_logic = get_logic(formula, env=env)
 
         smt_logic: Optional[Union[Logic, str]] = None
         try:
@@ -405,11 +407,11 @@ def smtlibscript_from_formula(formula: FNode, logic: Optional[Union[str, int, Lo
                args=[smt_logic])
 
     # Declare all types
-    types = get_env().typeso.get_types(formula, custom_only=True)
+    types = env.typeso.get_types(formula, custom_only=True)
     for type_ in types:
         script.add(name=smtcmd.DECLARE_SORT, args=[type_.decl])
 
-    deps = formula.get_free_variables()
+    deps = env.fvo.get_free_variables(formula)
     # Declare all variables
     for symbol in deps:
         assert symbol.is_symbol()

@@ -306,7 +306,7 @@ class BVTypeTok(GrammarSymbol):
         self.width = width
 
     def nud(self, parser):
-        return types.BVType(self.width)
+        return parser.env.type_manager.BVType(self.width)
 
 class IntTypeTok(GrammarSymbol):
     def nud(self, parser):
@@ -369,7 +369,7 @@ class OpenArrayTypeTok(GrammarSymbol):
             parser.expect(ClosePar, ")")
             return parser.mgr.Array(idx_type, default)
         else:
-            return types.ArrayType(idx_type, el_type)
+            return parser.env.type_manager.ArrayType(idx_type, el_type)
 
 
 class OpenPar(GrammarSymbol):

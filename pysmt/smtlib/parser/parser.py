@@ -1619,9 +1619,11 @@ class SmtLibZ3Parser(SmtLibParser):
         self.interpreted['ubv_to_int'] = self._operator_adapter(mgr.BVToNatural)
 
     def _ext_rotate_left(self, x, y):
-        return self.env.formula_manager.BVRol(x, y.simplify().constant_value())
+        amount = self.env.simplifier.simplify(y).constant_value()
+        return self.env.formula_manager.BVRol(x, amount)
 
     def _ext_rotate_right(self, x, y):
-        return self.env.formula_manager.BVRor(x, y.simplify().constant_value())
+        amount = self.env.simplifier.simplify(y).constant_value()
+        return self.env.formula_manager.BVRor(x, amount)
 
 # EOC SmtLibZ3Parser

@@ -270,7 +270,7 @@ class Solver(object):
 
         Raises TypeError.
         """
-        if formula.get_type() != BOOL:
+        if self.environment.stc.get_type(formula) != BOOL:
             raise PysmtTypeError("Argument '%s' must be boolean." % formula)
 
 
@@ -492,14 +492,16 @@ class Model(object):
         models.
         """
 
-        subs = self.get_values(formula.get_free_variables())
-        simp = formula.substitute(subs).simplify()
+        env = self.environment
+        get_free_vars = env.fvo.get_free_variables
+        subs = self.get_values(get_free_vars(formula))
+        simp = env.simplifier.simplify(env.substituter.substitute(formula, subs))
         if simp.is_true():
             return True
         if simp.is_false():
             return False
 
-        free_vars = simp.get_free_variables()
+        free_vars = get_free_vars(simp)
         if  len(free_vars) > 0:
             # Partial model
             return False
@@ -520,7 +522,7 @@ class Model(object):
                 stack += x.args()
 
             subs = self.get_values(div_0)
-            simp = simp.substitute(subs).simplify()
+            simp = env.simplifier.simplify(env.substituter.substitute(simp, subs))
             return simp.is_true()
         return False
 
