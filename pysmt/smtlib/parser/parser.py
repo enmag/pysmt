@@ -304,6 +304,40 @@ class Tokenizer(object):
 # EOC Tokenizer
 
 
+#
+# Helpers to expand the SMT-LIB n-ary applications of operators that pySMT
+# only exposes as binary ones. The SMT-LIB standard attaches one of the
+# attributes :left-assoc, :right-assoc, :chainable or :pairwise to every such
+# operator; the three functions below implement the first three (:pairwise is
+# already covered by mgr.AllDifferent).
+#
+# In all cases a single argument is accepted and behaves as the identity (or
+# as `true` for the chainable operators, where the conjunction is empty).
+# The standard requires at least two arguments, but pySMT has always been
+# lenient about this for `and`, `or`, `+` and `*`, and we keep it uniform.
+#
+
+def _left_assoc(operator: Callable) -> Callable:
+    """(op a b c) is expanded to (op (op a b) c)"""
+    def res(*args):
+        return functools.reduce(operator, args)
+    return res
+
+
+def _right_assoc(operator: Callable) -> Callable:
+    """(op a b c) is expanded to (op a (op b c))"""
+    def res(*args):
+        return functools.reduce(lambda acc, x: operator(x, acc), reversed(args))
+    return res
+
+
+def _chainable(mgr: FormulaManager, operator: Callable) -> Callable:
+    """(op a b c) is expanded to (and (op a b) (op b c))"""
+    def res(*args):
+        return mgr.And([operator(l, r) for l, r in zip(args, args[1:])])
+    return res
+
+
 class SmtLibParser(object):
     """Parse an SmtLib file and builds an SmtLibScript object.
     The main function is get_script (and its wrapper
@@ -373,22 +407,27 @@ class SmtLibParser(object):
             "!": self._enter_annotation,
             "exists": self._enter_quantifier,
             "forall": self._enter_quantifier,
+            # '+' and '*' are :left-assoc, but pySMT builds them n-ary
+            # natively; the other n-ary operators are folded, see the
+            # _left_assoc/_right_assoc/_chainable helpers above.
             '+': self._operator_adapter(self.Plus),
             '-': self._operator_adapter(self._minus_or_uminus),
             '*': self._operator_adapter(self.Times),
-            '/': self._operator_adapter(self._division),
+            '/': self._operator_adapter(_left_assoc(self._division)),
+            'div': self._operator_adapter(_left_assoc(mgr.Div)),
             'pow': self._operator_adapter(mgr.Pow),
-            '>': self._operator_adapter(self.GT),
-            '<': self._operator_adapter(self.LT),
-            '>=': self._operator_adapter(self.GE),
-            '<=': self._operator_adapter(self.LE),
-            '=': self._operator_adapter(self._equals_or_iff),
+            '>': self._operator_adapter(_chainable(mgr, self.GT)),
+            '<': self._operator_adapter(_chainable(mgr, self.LT)),
+            '>=': self._operator_adapter(_chainable(mgr, self.GE)),
+            '<=': self._operator_adapter(_chainable(mgr, self.LE)),
+            '=': self._operator_adapter(_chainable(mgr, self._equals_or_iff)),
             'not': self._operator_adapter(mgr.Not),
             'and': self._operator_adapter(mgr.And),
             'or': self._operator_adapter(mgr.Or),
-            'xor': self._operator_adapter(mgr.Xor),
-            '=>': self._operator_adapter(mgr.Implies),
-            '<->': self._operator_adapter(mgr.Iff),
+            'xor': self._operator_adapter(_left_assoc(mgr.Xor)),
+            '=>': self._operator_adapter(_right_assoc(mgr.Implies)),
+            # '<->' is a pySMT extension: treated as :left-assoc, like 'xor'
+            '<->': self._operator_adapter(_left_assoc(mgr.Iff)),
             'ite': self._operator_adapter(self.Ite),
             'distinct': self._operator_adapter(self.AllDifferent),
             'to_real': self._operator_adapter(mgr.ToReal),
@@ -407,12 +446,12 @@ class SmtLibParser(object):
             'bvlshr': self._operator_adapter(mgr.BVLShr),
             'bvsub': self._operator_adapter(mgr.BVSub),
             'bvult': self._operator_adapter(mgr.BVULT),
-            'bvxor': self._operator_adapter(mgr.BVXor),
+            'bvxor': self._operator_adapter(_left_assoc(mgr.BVXor)),
             '_': self._smtlib_underscore,
             # Extended Functions
             'bvnand': self._operator_adapter(mgr.BVNand),
             'bvnor': self._operator_adapter(mgr.BVNor),
-            'bvxnor': self._operator_adapter(mgr.BVXnor),
+            'bvxnor': self._operator_adapter(_left_assoc(mgr.BVXnor)),
             'bvcomp': self._operator_adapter(mgr.BVComp),
             'bvsdiv': self._operator_adapter(mgr.BVSDiv),
             'bvsrem': self._operator_adapter(mgr.BVSRem),
@@ -492,7 +531,7 @@ class SmtLibParser(object):
         self.cache.update({'false': mgr.FALSE(), 'true': mgr.TRUE()})
 
     def _minus_or_uminus(self, *args) -> FNode:
-        """Utility function that handles both unary and binary minus"""
+        """Utility function that handles unary and n-ary minus"""
         mgr = self.env.formula_manager
         if len(args) == 1:
             lty = self.get_type(args[0])
@@ -506,9 +545,8 @@ class SmtLibParser(object):
                     return mgr.Real(-1 * args[0].constant_value())
                 mult = mgr.Real(-1)
             return mgr.Times(mult, args[0])
-        else:
-            assert len(args) == 2
-            return self.Minus(args[0], args[1])
+        # '-' is :left-assoc: (- a b c) is (- (- a b) c)
+        return functools.reduce(self.Minus, args)
 
     def _enter_smtlib_as(self, stack: List[List[Union[Callable, FNode, Any]]], tokens: Tokenizer, key: str):
         """Utility function that handles 'as' that is a special function in SMTLIB"""

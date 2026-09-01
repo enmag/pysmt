@@ -25,9 +25,12 @@ from pysmt.test import TestCase, skipIfNoSolverForLogic, main
 from pysmt.test.examples import get_example_formulae
 from pysmt.smtlib.parser import SmtLibParser, Tokenizer
 from pysmt.smtlib.script import smtlibscript_from_formula
-from pysmt.shortcuts import Iff
+from pysmt.shortcuts import Iff, Symbol, And, Implies, Xor, LT, GE, Equals, \
+    Plus, Minus, Times, Div, AllDifferent, BVXor, BVConcat
 from pysmt.shortcuts import read_smtlib, write_smtlib, get_env
 from pysmt.exceptions import PysmtSyntaxError
+from pysmt.smtlib.commands import ASSERT
+from pysmt.typing import INT, REAL, BV8
 
 
 class TestSMTParseExamples(TestCase):
@@ -215,6 +218,130 @@ class TestSMTParseExamples(TestCase):
         get_type = get_env().stc.get_type
         for cmd in s:
             self.assertEqual(cmd.args[2], get_type(cmd.args[3]))
+
+    def test_nary_operators(self):
+        """All the SMT-LIB n-ary operators are expanded as the standard
+        prescribes: see https://github.com/pysmt/pysmt/issues/638"""
+        INT_DECLS = "(declare-fun a () Int)(declare-fun b () Int)" \
+                    "(declare-fun c () Int)(declare-fun d () Int)"
+        BOOL_DECLS = "(declare-fun p () Bool)(declare-fun q () Bool)" \
+                     "(declare-fun r () Bool)"
+        BV_DECLS = "(declare-fun x () (_ BitVec 8))(declare-fun y () (_ BitVec 8))" \
+                   "(declare-fun z () (_ BitVec 8))"
+
+        # (declarations, n-ary application, expected expansion)
+        cases = [
+            # :right-assoc
+            (BOOL_DECLS, "(=> p q r)", "(=> p (=> q r))"),
+            (BOOL_DECLS, "(=> p q r p)", "(=> p (=> q (=> r p)))"),
+            # :left-assoc
+            (BOOL_DECLS, "(xor p q r)", "(xor (xor p q) r)"),
+            (BOOL_DECLS, "(<-> p q r)", "(<-> (<-> p q) r)"),
+            (INT_DECLS, "(- a b c)", "(- (- a b) c)"),
+            (INT_DECLS, "(- a b c d)", "(- (- (- a b) c) d)"),
+            (INT_DECLS, "(/ a b c)", "(/ (/ a b) c)"),
+            (INT_DECLS, "(div a b c)", "(div (div a b) c)"),
+            (BV_DECLS, "(bvxor x y z)", "(bvxor (bvxor x y) z)"),
+            (BV_DECLS, "(bvxnor x y z)", "(bvxnor (bvxnor x y) z)"),
+            # :chainable
+            (INT_DECLS, "(> a b c)", "(and (> a b) (> b c))"),
+            (INT_DECLS, "(>= a b c d)", "(and (>= a b) (>= b c) (>= c d))"),
+            (INT_DECLS, "(< a b c)", "(and (< a b) (< b c))"),
+            (INT_DECLS, "(<= a b c)", "(and (<= a b) (<= b c))"),
+            (INT_DECLS, "(= a b c)", "(and (= a b) (= b c))"),
+            (BOOL_DECLS, "(= p q r)", "(and (<-> p q) (<-> q r))"),
+            # unary applications: identity for the associative operators,
+            # vacuously true for the chainable ones
+            (BOOL_DECLS, "(=> p)", "p"),
+            (BOOL_DECLS, "(xor p)", "p"),
+            (INT_DECLS, "(/ a)", "a"),
+            (INT_DECLS, "(= a)", "true"),
+            (INT_DECLS, "(< a)", "true"),
+        ]
+        for decls, nary, expected in cases:
+            self.assertEqual(self._parse_assertion(decls, nary),
+                             self._parse_assertion(decls, expected),
+                             "wrong expansion of %s" % nary)
+
+    def test_nary_operators_end_to_end(self):
+        """Parse a whole SMT-LIB2 script using the n-ary operators and check
+        the resulting formulae against the ones built with the pySMT API"""
+        script = """
+        ; no set-logic: no pySMT logic covers BV + non-linear Int/Real at once
+        (declare-fun a () Int)
+        (declare-fun b () Int)
+        (declare-fun c () Int)
+        (declare-fun r () Real)
+        (declare-fun s () Real)
+        (declare-fun t () Real)
+        (declare-fun p () Bool)
+        (declare-fun q () Bool)
+        (declare-fun u () Bool)
+        (declare-fun x () (_ BitVec 8))
+        (declare-fun y () (_ BitVec 8))
+        (declare-fun z () (_ BitVec 8))
+        (assert (< a b c))
+        (assert (>= a b c))
+        (assert (= a b c))
+        (assert (= p q u))
+        (assert (= (- a b c) (+ a b c)))
+        (assert (= (div a b c) (* a b c)))
+        (assert (= (/ r s t) r))
+        (assert (=> p q u))
+        (assert (xor p q u))
+        (assert (distinct a b c))
+        (assert (= (bvxor x y z) x))
+        (assert (= (concat x y z) (concat z y x)))
+        (check-sat)
+        """
+        a, b, c = (Symbol(name, INT) for name in "abc")
+        r, s, t = (Symbol(name, REAL) for name in "rst")
+        p, q, u = (Symbol(name) for name in "pqu")
+        x, y, z = (Symbol(name, BV8) for name in "xyz")
+
+        expected = [
+            # :chainable
+            And(LT(a, b), LT(b, c)),
+            And(GE(a, b), GE(b, c)),
+            And(Equals(a, b), Equals(b, c)),
+            And(Iff(p, q), Iff(q, u)),
+            # :left-assoc ('+' and '*' stay flat n-ary)
+            Equals(Minus(Minus(a, b), c), Plus(a, b, c)),
+            Equals(Div(Div(a, b), c), Times(a, b, c)),
+            Equals(Div(Div(r, s), t), r),
+            # :right-assoc
+            Implies(p, Implies(q, u)),
+            # :left-assoc
+            Xor(Xor(p, q), u),
+            # :pairwise
+            AllDifferent(a, b, c),
+            # bit-vectors
+            Equals(BVXor(BVXor(x, y), z), x),
+            Equals(BVConcat(BVConcat(x, y), z), BVConcat(BVConcat(z, y), x)),
+        ]
+
+        parser = SmtLibParser()
+        parsed = [cmd.args[0] for cmd in
+                  parser.get_script(StringIO(script)).filter_by_command_name(ASSERT)]
+
+        self.assertEqual(len(parsed), len(expected))
+        for got, exp in zip(parsed, expected):
+            self.assertEqual(got, exp)
+        # ...and the conjunction of all of them is what the script means
+        self.assertEqual(
+            SmtLibParser().get_script(StringIO(script)).get_last_formula(),
+            And(expected))
+
+    def test_nary_div_is_integer_division(self):
+        """'div' is the Ints division, so it must not be promoted to Real"""
+        f = self._parse_assertion("(declare-fun a () Int)", "(div a 2 3)")
+        self.assertEqual(get_env().stc.get_type(f), INT)
+
+    @staticmethod
+    def _parse_assertion(declarations, expression):
+        script = "%s (assert %s)" % (declarations, expression)
+        parser = SmtLibParser()
+        return parser.get_script(StringIO(script)).get_last_formula()
 
     def test_typing_define_fun(self):
         script = """
