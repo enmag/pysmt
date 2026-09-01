@@ -166,12 +166,12 @@ class SmtLibSolver(Solver): # TODO this class is defined twice in pysmt. Here an
     def add_assertion(self, formula, named=None):
         # This is needed because Z3 (and possibly other solvers) incorrectly
         # recognize N * M * x as a non-linear term
-        formula = formula.simplify()
+        formula = self.environment.simplifier.simplify(formula)
         sorts = self.to.get_types(formula, custom_only=True)
         for s in sorts:
             if all(s not in ds for ds in self.declared_sorts):
                 self._declare_sort(s)
-        deps = formula.get_free_variables()
+        deps = self.environment.fvo.get_free_variables(formula)
         for d in deps:
             if all(d not in dv for dv in self.declared_vars):
                 self._declare_variable(d)

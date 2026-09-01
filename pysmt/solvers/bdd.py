@@ -243,7 +243,7 @@ class BddSolver(Solver):
 class BddConverter(Converter, DagWalker):
 
     def __init__(self, environment, ddmanager):
-        DagWalker.__init__(self)
+        DagWalker.__init__(self, env=environment)
 
         self.environment = environment
         self.fmgr = self.environment.formula_manager
@@ -265,7 +265,7 @@ class BddConverter(Converter, DagWalker):
         return self.walk(formula)
 
     def back(self, bdd_expr):
-        return self._walk_back(bdd_expr, self.fmgr).simplify()
+        return self.env.simplifier.simplify(self._walk_back(bdd_expr, self.fmgr))
 
     def get_all_vars_array(self):
         # NOTE: This way of building the var_array does not look

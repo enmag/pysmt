@@ -322,7 +322,7 @@ class BoolectorSolver(IncrementalTrackingSolver, UnsatCoreSolver, SmtLibBasicSol
 
     def get_value(self, item):
         self._assert_no_function_type(item)
-        itype = item.get_type()
+        itype = self.environment.stc.get_type(item)
         titem = self.converter.convert(item)
 
         def _back_bv_func(width):

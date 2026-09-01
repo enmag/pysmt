@@ -43,13 +43,13 @@ class EagerModel(Model):
     def get_value(self, formula: FNode, model_completion: bool=True) -> FNode:
         substituter = self.environment.substituter
         if model_completion:
-            syms = formula.get_free_variables()
+            syms = self.environment.fvo.get_free_variables(formula)
             self._complete_model(syms)
             r = substituter.substitute(formula, self.completed_assignment)
         else:
             r = substituter.substitute(formula, self.assignment)
 
-        res = r.simplify()
+        res = self.environment.simplifier.simplify(r)
         if not res.is_constant():
             raise PysmtTypeError("Was expecting a constant but got %s" % res)
         return res

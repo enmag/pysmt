@@ -276,7 +276,8 @@ class TheoryOracle(walkers.DagWalker):
             theory_out = theory_out.combine(t)
         # Check for non-linear counting the arguments having at least
         # one free variable
-        if sum(1 for x in formula.args() if x.get_free_variables()) > 1:
+        if sum(1 for x in formula.args()
+               if self.env.fvo.get_free_variables(x)) > 1:
             theory_out = theory_out.set_linear(False)
         # This is  not in DL anymore
         theory_out = theory_out.set_difference_logic(False)
@@ -324,9 +325,10 @@ class TheoryOracle(walkers.DagWalker):
         for t in args[1:]:
             theory_out = theory_out.combine(t)
         # Check for non-linear
+        get_free_vars = self.env.fvo.get_free_variables
         left, right = formula.args()
-        if len(left.get_free_variables()) != 0 and \
-           len(right.get_free_variables()) != 0:
+        if len(get_free_vars(left)) != 0 and \
+           len(get_free_vars(right)) != 0:
             theory_out = theory_out.set_linear(False)
         elif formula.arg(1).is_zero():
             # DivBy0 is non-linear

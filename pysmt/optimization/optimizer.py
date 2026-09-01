@@ -21,7 +21,7 @@ import warnings
 from pysmt.solvers.solver import Solver
 from pysmt.exceptions import PysmtValueError, GoalNotSupportedError
 from pysmt.optimization.goal import Goal, MaxSMTGoal, MinimizationGoal, MaximizationGoal
-from pysmt.typing import INT, REAL, BVType, _BVType
+from pysmt.typing import INT, REAL, _BVType
 from pysmt.logics import LIA, LRA, BV, QF_LIRA, Logic
 from pysmt.environment import Environment
 from pysmt.fnode import FNode
@@ -118,7 +118,7 @@ class Optimizer(Solver):
         elif otype.is_real_type():
             return REAL
         elif otype.is_bv_type():
-            return BVType(otype.width)
+            return self.environment.type_manager.BVType(otype.width)
         else:
             raise PysmtValueError("Invalid optimization function type: %s" % otype)
 
@@ -263,7 +263,7 @@ class OptSearchInterval(OptComparationFunctions):
 
         lower, upper = None, None
         if not goal.is_maxsmt_goal():
-            term_type = goal.term().get_type()
+            term_type = environment.stc.get_type(goal.term())
             # For bit-vectors, start lower and upper bounds to their width limit
             if term_type.is_bv_type():
                 assert isinstance(term_type, _BVType)
@@ -320,7 +320,7 @@ class OptSearchInterval(OptComparationFunctions):
             l = self._upper - (cast(Union[int, Fraction], abs(self._upper)) + 1)
         elif self._lower is not None and self._upper is None:
             u = self._lower + cast(Union[int, Fraction], abs(self._lower)) + 1
-        term_type = self._obj.term().get_type()
+        term_type = self.environment.stc.get_type(self._obj.term())
         assert l is not None and u is not None
         if term_type.is_int_type() or term_type.is_bv_type():
             pivot = (l + u) // 2
@@ -417,8 +417,9 @@ class OptPareto(OptComparationFunctions):
         return correct_operator(self.goal.term(), self.val)
 
 
-def _warn_diverge_real_goal(goal: Goal):
-    if (goal.is_maximization_goal() or goal.is_minimization_goal()) and goal.term().get_type().is_real_type():
+def _warn_diverge_real_goal(goal: Goal, env: Environment):
+    if (goal.is_maximization_goal() or goal.is_minimization_goal()) and \
+       env.stc.get_type(goal.term()).is_real_type():
         warnings.warn("Algorithm might diverge on Real minimization/maximization objectives.")
 
 
@@ -488,9 +489,9 @@ class ExternalOptimizerMixin(Optimizer):
         """
         Core algorithm for the optimization process.
         Based on the strategy, it will either perform a linear or binary search"""
-        _warn_diverge_real_goal(goal)
+        _warn_diverge_real_goal(goal, self.environment)
         if goal.is_maxsmt_goal():
-            goal = MaximizationGoal(goal.term())
+            goal = MaximizationGoal(goal.term(), env=self.environment)
         model = None
         client_data = self._setup()
 
@@ -528,7 +529,7 @@ class ExternalOptimizerMixin(Optimizer):
         objs = [OptPareto(goal, self.environment) for goal in goals]
 
         for g in goals:
-            _warn_diverge_real_goal(g)
+            _warn_diverge_real_goal(g, self.environment)
 
         terminated = False
         client_data = self._setup()

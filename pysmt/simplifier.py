@@ -265,7 +265,8 @@ class Simplifier(pysmt.walkers.DagWalker):
         assert len(args) == 1
         sf = args[0]
 
-        varset = set(formula.quantifier_vars()).intersection(sf.get_free_variables())
+        varset = set(formula.quantifier_vars()).intersection(
+            self.env.fvo.get_free_variables(sf))
 
         if len(varset) == 0:
             return sf
@@ -276,7 +277,8 @@ class Simplifier(pysmt.walkers.DagWalker):
         assert len(args) == 1
         sf = args[0]
 
-        varset = set(formula.quantifier_vars()).intersection(sf.get_free_variables())
+        varset = set(formula.quantifier_vars()).intersection(
+            self.env.fvo.get_free_variables(sf))
 
         if len(varset) == 0:
             return sf
@@ -1151,7 +1153,7 @@ class BddSimplifier(Simplifier):
     def abstract_and_simplify(self, formula: FNode) -> FNode:
         abs_formula = self.walk(formula)
         abs_res = self.back(self.convert(abs_formula))
-        res = abs_res.substitute(self.ba_map)
+        res = self.env.substituter.substitute(abs_res, self.ba_map)
         return res
 
     @handles(op.RELATIONS)

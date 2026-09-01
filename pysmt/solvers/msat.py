@@ -380,6 +380,7 @@ class MSatConverter(Converter, DagWalker):
         self._msat_lib = MSATLibLoader(self.__class__.__lib_name__)
         self.msat_env = msat_env
         self.mgr = environment.formula_manager
+        self.tm = environment.type_manager
         self._get_type = environment.stc.get_type
 
         # Maps a Symbol into the corresponding msat_decl instance in the msat_env
@@ -450,20 +451,20 @@ class MSatConverter(Converter, DagWalker):
             self._msat_lib.MSAT_TAG_TRUE: lambda term, args: types.BOOL,
             self._msat_lib.MSAT_TAG_FALSE: lambda term, args: types.BOOL,
             self._msat_lib.MSAT_TAG_AND: lambda term, args:\
-                types.FunctionType(types.BOOL, [types.BOOL, types.BOOL]),
+                self.tm.FunctionType(types.BOOL, [types.BOOL, types.BOOL]),
             self._msat_lib.MSAT_TAG_OR: lambda term, args:\
-                types.FunctionType(types.BOOL, [types.BOOL, types.BOOL]),
+                self.tm.FunctionType(types.BOOL, [types.BOOL, types.BOOL]),
             self._msat_lib.MSAT_TAG_NOT: lambda term, args:\
-                types.FunctionType(types.BOOL, [types.BOOL]),
+                self.tm.FunctionType(types.BOOL, [types.BOOL]),
             self._msat_lib.MSAT_TAG_IFF: lambda term, args:\
-                types.FunctionType(types.BOOL, [types.BOOL, types.BOOL]),
+                self.tm.FunctionType(types.BOOL, [types.BOOL, types.BOOL]),
             self._msat_lib.MSAT_TAG_ITE: self._sig_ite,
             self._msat_lib.MSAT_TAG_EQ: self._sig_most_generic_bool_binary,
             self._msat_lib.MSAT_TAG_LEQ: self._sig_most_generic_bool_binary,
             self._msat_lib.MSAT_TAG_PLUS:  self._sig_most_generic_bool_binary,
             self._msat_lib.MSAT_TAG_TIMES: self._sig_most_generic_bool_binary,
             self._msat_lib.MSAT_TAG_FLOOR: lambda term, args:\
-                types.FunctionType(types.INT, [types.REAL]),
+                self.tm.FunctionType(types.INT, [types.REAL]),
             self._msat_lib.MSAT_TAG_BV_MUL: self._sig_binary,
             self._msat_lib.MSAT_TAG_BV_ADD: self._sig_binary,
             self._msat_lib.MSAT_TAG_BV_UDIV:self._sig_binary,
@@ -531,66 +532,66 @@ class MSatConverter(Converter, DagWalker):
 
     def _sig_binary(self, term, args):
         t = self.env.stc.get_type(args[0])
-        return types.FunctionType(t, [t, t])
+        return self.tm.FunctionType(t, [t, t])
 
     def _sig_bool_binary(self, term, args):
         t = self.env.stc.get_type(args[0])
-        return types.FunctionType(types.BOOL, [t, t])
+        return self.tm.FunctionType(types.BOOL, [t, t])
 
     def _sig_most_generic_bool_binary(self, term, args):
         t1 = self.env.stc.get_type(args[0])
         t2 = self.env.stc.get_type(args[1])
         t = self._most_generic(t1, t2)
-        return types.FunctionType(types.BOOL, [t, t])
+        return self.tm.FunctionType(types.BOOL, [t, t])
 
     def _sig_unary(self, term, args):
         t = self.env.stc.get_type(args[0])
-        return types.FunctionType(t, [t])
+        return self.tm.FunctionType(t, [t])
 
     def _sig_ite(self, term, args):
         t1 = self.env.stc.get_type(args[1])
         t2 = self.env.stc.get_type(args[2])
         t = self._most_generic(t1, t2)
-        return types.FunctionType(t, [types.BOOL, t, t])
+        return self.tm.FunctionType(t, [types.BOOL, t, t])
 
     def _sig_bv_comp(self, term,  args):
         t = self.env.stc.get_type(args[0])
-        return types.FunctionType(types.BVType(1), [t, t])
+        return self.tm.FunctionType(self.tm.BVType(1), [t, t])
 
     def _sig_bv_sext(self, term, args):
         _, amount = self._msat_lib.msat_term_is_bv_sext(self.msat_env(), term)
         t = self.env.stc.get_type(args[0])
-        return types.FunctionType(types.BVType(amount + t.width), [t])
+        return self.tm.FunctionType(self.tm.BVType(amount + t.width), [t])
 
     def _sig_bv_zext(self, term, args):
         _, amount = self._msat_lib.msat_term_is_bv_zext(self.msat_env(), term)
         t = self.env.stc.get_type(args[0])
-        return types.FunctionType(types.BVType(amount + t.width), [t])
+        return self.tm.FunctionType(self.tm.BVType(amount + t.width), [t])
 
     def _sig_bv_extract(self, term, args):
         _, msb, lsb = self._msat_lib.msat_term_is_bv_extract(self.msat_env(), term)
         t = self.env.stc.get_type(args[0])
-        return types.FunctionType(types.BVType(msb - lsb + 1), [t])
+        return self.tm.FunctionType(self.tm.BVType(msb - lsb + 1), [t])
 
     def _sig_bv_concat(self, term, args):
         t1 = self.env.stc.get_type(args[0])
         t2 = self.env.stc.get_type(args[1])
-        return types.FunctionType(types.BVType(t1.width + t2.width), [t1, t2])
+        return self.tm.FunctionType(self.tm.BVType(t1.width + t2.width), [t1, t2])
 
     def _sig_array_read(self, term, args):
         t1 = self.env.stc.get_type(args[0])
         t = t1.elem_type
-        return types.FunctionType(t, [t1, t1.index_type])
+        return self.tm.FunctionType(t, [t1, t1.index_type])
 
     def _sig_array_write(self, term, args):
         ty = self._msat_lib.msat_term_get_type(term)
         at = self._msat_type_to_type(ty)
-        return types.FunctionType(at, [at, at.index_type, at.elem_type])
+        return self.tm.FunctionType(at, [at, at.index_type, at.elem_type])
 
     def _sig_array_const(self, term,  args):
         ty = self._msat_lib.msat_term_get_type(term)
         pyty = self._msat_type_to_type(ty)
-        return types.FunctionType(pyty, [pyty.elem_type])
+        return self.tm.FunctionType(pyty, [pyty.elem_type])
 
     def _sig_unknown(self, term: Any, args: List[Any]) -> PySMTType:
         if self._msat_lib.msat_term_is_boolean_constant(self.msat_env(), term):
@@ -604,7 +605,7 @@ class MSatConverter(Converter, DagWalker):
             else:
                 assert "_" in str(term), "Unrecognized type for '%s'" % str(term)
                 width = int(str(term).split("_")[1])
-                res = types.BVType(width)
+                res = self.tm.BVType(width)
             return res
         elif self._msat_lib.msat_term_is_constant(self.msat_env(), term):
             ty = self._msat_lib.msat_term_get_type(term)
@@ -712,11 +713,11 @@ class MSatConverter(Converter, DagWalker):
                 if check_arr:
                     i = self._msat_type_to_type(idx_type)
                     e = self._msat_type_to_type(val_type)
-                    res = self.mgr.Symbol(rep, types.ArrayType(i, e))
+                    res = self.mgr.Symbol(rep, self.tm.ArrayType(i, e))
                 else:
                     _, width = self._msat_lib.msat_is_bv_type(self.msat_env(), ty)
                     assert isinstance(width, int), "Unsupported variable type for '%s'"%str(term)
-                    res = self.mgr.Symbol(rep, types.BVType(width))
+                    res = self.mgr.Symbol(rep, self.tm.BVType(width))
 
         elif self._msat_lib.msat_term_is_uf(self.msat_env(), term):
             d = self._msat_lib.msat_term_get_decl(term)
@@ -1079,11 +1080,11 @@ class MSatConverter(Converter, DagWalker):
             if check_arr != 0:
                 i = self._msat_type_to_type(idx_type)
                 e = self._msat_type_to_type(val_type)
-                return types.ArrayType(i, e)
+                return self.tm.ArrayType(i, e)
 
             check_bv, bv_width = self._msat_lib.msat_is_bv_type(self.msat_env(), tp)
             if check_bv != 0:
-                return types.BVType(bv_width)
+                return self.tm.BVType(bv_width)
 
             # It must be a function type, currently unsupported
             raise NotImplementedError("Function types are unsupported")
@@ -1307,9 +1308,9 @@ class MSatBoolUFRewriter(IdentityDagWalker):
         IdentityDagWalker.__init__(self, environment)
         self.get_type = self.env.stc.get_type
         self.mgr = self.env.formula_manager
+        self.tm = self.env.type_manager
 
     def walk_function(self, formula: FNode, args: List[FNode], **kwargs) -> FNode:
-        from pysmt.typing import FunctionType
         # Separate arguments
         bool_args = []
         other_args = []
@@ -1329,7 +1330,7 @@ class MSatBoolUFRewriter(IdentityDagWalker):
         if len(ptype) == 0:
             ftype = rtype
         else:
-            ftype = FunctionType(rtype, ptype)
+            ftype = self.tm.FunctionType(rtype, ptype)
 
         # Base-case
         stack = []

@@ -40,6 +40,7 @@ class CNFizer(DagWalker):
         DagWalker.__init__(self, environment)
 
         self.mgr = self.env.formula_manager
+        self.simplify = self.env.simplifier.simplify
         self._introduced_variables: Dict[FNode, FNode] = {}
 
     def _key_var(self, formula: FNode) -> FNode:
@@ -72,7 +73,7 @@ class CNFizer(DagWalker):
                     # Prune clauses as ~tl -> l1 v ... v lk
                     simp = None
                     break
-                elif lit == self.mgr.Not(tl).simplify():
+                elif lit == self.simplify(self.mgr.Not(tl)):
                     # Simplify tl -> l1 v ... v lk
                     # into l1 v ... v lk
                     continue
@@ -111,7 +112,7 @@ class CNFizer(DagWalker):
             return args[0]
 
         k = self._key_var(formula)
-        _cnf = [frozenset([k] + [self.mgr.Not(a).simplify() for a,_ in args])]
+        _cnf = [frozenset([k] + [self.simplify(self.mgr.Not(a)) for a,_ in args])]
         for a,c in args:
             _cnf.append(frozenset([a, self.mgr.Not(k)]))
             for clause in c:
@@ -136,15 +137,15 @@ class CNFizer(DagWalker):
         elif a.is_false():
             return self.mgr.TRUE(), CNFizer.TRUE_CNF
         else:
-            return self.mgr.Not(a).simplify(), _cnf
+            return self.simplify(self.mgr.Not(a)), _cnf
 
     def walk_implies(self, formula,  args, **kwargs):
         a, cnf_a = args[0]
         b, cnf_b = args[1]
 
         k = self._key_var(formula)
-        not_a = self.mgr.Not(a).simplify()
-        not_b = self.mgr.Not(b).simplify()
+        not_a = self.simplify(self.mgr.Not(a))
+        not_b = self.simplify(self.mgr.Not(b))
         not_k = self.mgr.Not(k)
 
         return k, (cnf_a | cnf_b | frozenset([frozenset([not_a, b, not_k]),
@@ -156,8 +157,8 @@ class CNFizer(DagWalker):
         b, cnf_b = args[1]
 
         k = self._key_var(formula)
-        not_a = self.mgr.Not(a).simplify()
-        not_b = self.mgr.Not(b).simplify()
+        not_a = self.simplify(self.mgr.Not(a))
+        not_b = self.simplify(self.mgr.Not(b))
         not_k = self.mgr.Not(k)
 
         return k, (cnf_a | cnf_b | frozenset([frozenset([not_a, not_b, k]),
@@ -184,9 +185,9 @@ class CNFizer(DagWalker):
         else:
             (i,cnf_i),(t,cnf_t),(e,cnf_e) = args
             k = self._key_var(formula)
-            not_i = self.mgr.Not(i).simplify()
-            not_t = self.mgr.Not(t).simplify()
-            not_e = self.mgr.Not(e).simplify()
+            not_i = self.simplify(self.mgr.Not(i))
+            not_t = self.simplify(self.mgr.Not(t))
+            not_e = self.simplify(self.mgr.Not(e))
             not_k = self.mgr.Not(k)
 
             return k, (cnf_i | cnf_t | cnf_e |
@@ -198,7 +199,7 @@ class CNFizer(DagWalker):
     @handles(op.THEORY_OPERATORS)
     def walk_theory_op(self, formula, **kwargs):
         #pylint: disable=unused-argument
-        if formula.get_type().is_bool_type():
+        if self.env.stc.get_type(formula).is_bool_type():
             return formula, CNFizer.TRUE_CNF
         return CNFizer.THEORY_PLACEHOLDER
 
@@ -305,7 +306,7 @@ class PolarityCNFizer(CNFizer):
         if pol:
             _cnf.extend(frozenset([a, self.mgr.Not(k)]) for a, _ in args)
         else:
-            _cnf.extend([frozenset([k] + [self.mgr.Not(a).simplify() for a, _ in args])])
+            _cnf.extend([frozenset([k] + [self.simplify(self.mgr.Not(a)) for a, _ in args])])
 
         return k, frozenset(_cnf)
 
@@ -318,7 +319,7 @@ class PolarityCNFizer(CNFizer):
         if pol:
             _cnf.extend([frozenset([self.mgr.Not(k)] + [a for a, _ in args])])
         else:
-            _cnf.extend(frozenset([k, self.mgr.Not(a).simplify()]) for a, c in args)
+            _cnf.extend(frozenset([k, self.simplify(self.mgr.Not(a))]) for a, c in args)
 
         return k, frozenset(_cnf)
 
@@ -327,8 +328,8 @@ class PolarityCNFizer(CNFizer):
         b, cnf_b = args[1]
 
         k = self._key_var(formula)
-        not_a = self.mgr.Not(a).simplify()
-        not_b = self.mgr.Not(b).simplify()
+        not_a = self.simplify(self.mgr.Not(a))
+        not_b = self.simplify(self.mgr.Not(b))
         not_k = self.mgr.Not(k)
         _cnf = []
         if pol:
@@ -345,8 +346,8 @@ class PolarityCNFizer(CNFizer):
         _, cnf_bn = args[3]
 
         k = self._key_var(formula)
-        not_a = self.mgr.Not(a).simplify()
-        not_b = self.mgr.Not(b).simplify()
+        not_a = self.simplify(self.mgr.Not(a))
+        not_b = self.simplify(self.mgr.Not(b))
         not_k = self.mgr.Not(k)
 
         return k, (cnf_ap | cnf_an | cnf_bp | cnf_bn
@@ -360,9 +361,9 @@ class PolarityCNFizer(CNFizer):
             return CNFizer.THEORY_PLACEHOLDER
         (i, cnf_ip), (_, cnf_in), (t, cnf_t), (e, cnf_e) = args
         k = self._key_var(formula)
-        not_i = self.mgr.Not(i).simplify()
-        not_t = self.mgr.Not(t).simplify()
-        not_e = self.mgr.Not(e).simplify()
+        not_i = self.simplify(self.mgr.Not(i))
+        not_t = self.simplify(self.mgr.Not(t))
+        not_e = self.simplify(self.mgr.Not(e))
         not_k = self.mgr.Not(k)
 
         _cnf = []
@@ -590,7 +591,7 @@ class PrenexNormalizer(DagWalker):
         # matrix. If we find a quantifier over a variable in this set
         # we need to alpha-rename before adding the quantifier to the
         # final list and accumulate the matrix.
-        reserved = formula.get_free_variables()
+        reserved = self.env.fvo.get_free_variables(formula)
 
         # We iterate to each argument, each could have a sequence of
         # quantifiers that we need to merge
@@ -603,7 +604,7 @@ class PrenexNormalizer(DagWalker):
                     # we need alpha-renaming: prepare the substitution map
                     sub = dict((v,self.mgr.FreshSymbol(v.symbol_type()))
                                for v in needs_rename)
-                    sub_matrix = sub_matrix.substitute(sub)
+                    sub_matrix = self.env.substituter.substitute(sub_matrix, sub)
 
                     # The new variables for this quantifiers will be
                     # its old variables, minus the one needing
@@ -1109,7 +1110,7 @@ def propagate_toplevel(formula: FNode, env: Optional["pysmt.environment.Environm
             else:
                 sigma[k] = v
 
-    res = formula.substitute(sigma)
+    res = env.substituter.substitute(formula, sigma)
     if preserve_equivalence:
         res = mgr.And(res, mgr.And([mgr.Equals(k, sigma[k]) for k in sigma]))
-    return res.simplify() if do_simplify else res
+    return env.simplifier.simplify(res) if do_simplify else res

@@ -615,7 +615,7 @@ class Factory(object):
                 atoms = formula.get_atoms()
                 res = []
                 for a in atoms:
-                    fv = a.get_free_variables()
+                    fv = self.environment.fvo.get_free_variables(a)
                     if any(v in model for v in fv):
                         if solver.get_value(a).is_true():
                             res.append(a)
