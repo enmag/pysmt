@@ -491,7 +491,7 @@ class ExternalOptimizerMixin(Optimizer):
         Based on the strategy, it will either perform a linear or binary search"""
         _warn_diverge_real_goal(goal, self.environment)
         if goal.is_maxsmt_goal():
-            goal = MaximizationGoal(goal.term())
+            goal = MaximizationGoal(goal.term(), env=self.environment)
         model = None
         client_data = self._setup()
 

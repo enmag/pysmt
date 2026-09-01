@@ -314,19 +314,24 @@ class SmtLibScript(object):
                         del max_smt_goals[k]
                         del max_smt_goals_backtrack[k]
             elif cmd.name == smtcmd.MAXIMIZE:
-                goals.append(MaximizationGoal(cmd.args[0], _command_is_signed(cmd)))
+                goals.append(MaximizationGoal(cmd.args[0], _command_is_signed(cmd),
+                                              env=mgr.env))
             elif cmd.name == smtcmd.MINIMIZE:
-                goals.append(MinimizationGoal(cmd.args[0], _command_is_signed(cmd)))
+                goals.append(MinimizationGoal(cmd.args[0], _command_is_signed(cmd),
+                                              env=mgr.env))
             elif cmd.name == smtcmd.MINMAX:
-                goals.append(MinMaxGoal(cmd.args[0], _command_is_signed(cmd)))
+                goals.append(MinMaxGoal(cmd.args[0], _command_is_signed(cmd),
+                                        env=mgr.env))
             elif cmd.name == smtcmd.MAXMIN:
-                goals.append(MaxMinGoal(cmd.args[0], _command_is_signed(cmd)))
+                goals.append(MaxMinGoal(cmd.args[0], _command_is_signed(cmd),
+                                        env=mgr.env))
             elif cmd.name == smtcmd.ASSERT_SOFT:
                 formula = cmd.args[0]
                 cmd_annotations = dict(cmd.args[1])
                 max_smt_id = cmd_annotations.get(":id", "")
                 max_smt_weight = cmd_annotations.get(":weight", mgr.Int(1))
-                _, goal = max_smt_goals.setdefault(max_smt_id, (len(goals), MaxSMTGoal()))
+                _, goal = max_smt_goals.setdefault(
+                    max_smt_id, (len(goals), MaxSMTGoal(env=mgr.env)))
                 goal.add_soft_clause(formula, max_smt_weight)
                 # if len(goal.soft) > 1 the goal is already in goals
                 if len(goal.soft) == 1:
@@ -517,12 +522,12 @@ class InterpreterOMT(InterpreterSMT):
             return None
 
         elif cmd.name == smtcmd.MAXIMIZE:
-            g: Goal = MaximizationGoal(cmd.args[0])
+            g: Goal = MaximizationGoal(cmd.args[0], env=optimizer.environment)
             self.optimization_goals[0].append(g)
             return g
 
         elif cmd.name == smtcmd.MINIMIZE:
-            g = MinimizationGoal(cmd.args[0])
+            g = MinimizationGoal(cmd.args[0], env=optimizer.environment)
             self.optimization_goals[0].append(g)
             return g
 
@@ -569,12 +574,12 @@ class InterpreterOMT(InterpreterSMT):
             return rt
 
         elif cmd.name == smtcmd.MAXMIN:
-            g = MaxMinGoal(cmd.args[0])
+            g = MaxMinGoal(cmd.args[0], env=optimizer.environment)
             self.optimization_goals[0].append(g)
             return g
 
         elif cmd.name == smtcmd.MINMAX:
-            g = MinMaxGoal(cmd.args[0])
+            g = MinMaxGoal(cmd.args[0], env=optimizer.environment)
             self.optimization_goals[0].append(g)
             return g
 

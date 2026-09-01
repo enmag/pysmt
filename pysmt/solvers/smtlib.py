@@ -19,9 +19,14 @@ from pysmt.fnode import FNode
 from pysmt.logics import Logic
 from typing import Iterable, Optional, Union
 
+from pysmt.environment import Environment
 from pysmt.solvers.solver import Model, Solver
 
 class SmtLibSolver(object):
+    # Implementations combine this interface with Solver (see
+    # SmtLibIgnoreMixin below), so they carry the environment they work in.
+    environment: Environment
+
     #
     # SMT-LIB 2 Interface
     #

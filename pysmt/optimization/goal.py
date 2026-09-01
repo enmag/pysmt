@@ -16,12 +16,12 @@
 #   limitations under the License.
 #
 
-from pysmt.environment import get_env
+from pysmt.environment import Environment, get_env
 from pysmt.exceptions import PysmtValueError
 from pysmt.oracles import get_logic
 from pysmt.logics import Logic, LIA, LRA, BV
 from pysmt.fnode import FNode
-from typing import List, Tuple, Type, cast
+from typing import List, Optional, Tuple, Type, cast
 
 
 class Goal(object):
@@ -51,6 +51,23 @@ class Goal(object):
         ```
     """
 
+    # The class-level default keeps subclasses that do not call Goal.__init__
+    # working against the global environment, as they did before.
+    _env: Optional[Environment] = None
+
+    def __init__(self, env: Optional[Environment]=None):
+        """
+        :param env: The environment the goal lives in; the global one if None
+        """
+        self._env = env if env is not None else get_env()
+
+    @property
+    def env(self) -> Environment:
+        """The environment this goal lives in."""
+        if self._env is None:
+            self._env = get_env()
+        return self._env
+
     def is_maximization_goal(self) -> bool:
         return False
 
@@ -67,7 +84,7 @@ class Goal(object):
         return False
 
     def get_logic(self) -> Logic:
-        logic = get_logic(self.term())
+        logic = get_logic(self.term(), env=self.env)
         if logic <= LIA:
             return LIA
         elif logic <= LRA:
@@ -99,11 +116,14 @@ class MaximizationGoal(Goal):
     Warning: some Optimizer may not support this goal
     """
 
-    def __init__(self, formula: FNode, signed: bool = False):
+    def __init__(self, formula: FNode, signed: bool = False,
+                 env: Optional[Environment]=None):
         """
         :param formula: The target formula
         :type  formula: FNode
+        :param env: The environment the goal lives in; the global one if None
         """
+        Goal.__init__(self, env)
         self.formula = formula
         self._bv_signed = signed
 
@@ -127,11 +147,14 @@ class MinimizationGoal(Goal):
     Warning: some Optimizer may not support this goal
     """
 
-    def __init__(self, formula: FNode, sign: bool = False):
+    def __init__(self, formula: FNode, sign: bool = False,
+                 env: Optional[Environment]=None):
         """
         :param formula: The target formula
         :type  formula: FNode
+        :param env: The environment the goal lives in; the global one if None
         """
+        Goal.__init__(self, env)
         self.formula = formula
         self._bv_signed = sign
 
@@ -156,19 +179,22 @@ class MinMaxGoal(MinimizationGoal):
     Warning: some Optimizer may not support this goal
     """
 
-    def __init__(self, terms: List[FNode], sign: bool = False):
+    def __init__(self, terms: List[FNode], sign: bool = False,
+                 env: Optional[Environment]=None):
         """
         :param terms: List of FNode
+        :param env: The environment the goal lives in; the global one if None
         """
+        if env is None:
+            env = get_env()
         if len(terms) == 0:
             raise PysmtValueError("MinMaxGoal requires at least one term")
-        elif terms[0].get_type().is_bv_type():
-            formula = get_env().formula_manager.MaxBV(sign, terms)
+        elif env.stc.get_type(terms[0]).is_bv_type():
+            formula = env.formula_manager.MaxBV(sign, terms)
         else:
-            formula = get_env().formula_manager.Max(terms)
-        MinimizationGoal.__init__(self, formula)
+            formula = env.formula_manager.Max(terms)
+        MinimizationGoal.__init__(self, formula, sign, env=env)
         self.terms = terms
-        self._bv_signed = sign
 
     def is_minmax_goal(self) -> bool:
         return True
@@ -185,19 +211,22 @@ class MaxMinGoal(MaximizationGoal):
     Warning: some Optimizer may not support this goal
     """
 
-    def __init__(self, terms: List[FNode], sign: bool = False):
+    def __init__(self, terms: List[FNode], sign: bool = False,
+                 env: Optional[Environment]=None):
         """
         :param terms: List of FNode
+        :param env: The environment the goal lives in; the global one if None
         """
+        if env is None:
+            env = get_env()
         if len(terms) == 0:
             raise PysmtValueError("MaxMinGoal requires at least one term")
-        elif terms[0].get_type().is_bv_type():
-            formula = get_env().formula_manager.MinBV(sign, terms)
+        elif env.stc.get_type(terms[0]).is_bv_type():
+            formula = env.formula_manager.MinBV(sign, terms)
         else:
-            formula = get_env().formula_manager.Min(terms)
-        MaximizationGoal.__init__(self, formula)
+            formula = env.formula_manager.Min(terms)
+        MaximizationGoal.__init__(self, formula, sign, env=env)
         self.terms = terms
-        self._bv_signed = sign
 
     def is_maxmin_goal(self) -> bool:
         return True
@@ -211,27 +240,33 @@ class MaxSMTGoal(Goal):
     MaxSMT goal common to all solvers.
     """
 
-    def __init__(self, real_weights: bool=True):
-        """Accepts soft clauses and the relative weights"""
+    def __init__(self, real_weights: bool=True,
+                 env: Optional[Environment]=None):
+        """Accepts soft clauses and the relative weights
+
+        :param env: The environment the goal lives in; the global one if None
+        """
+        Goal.__init__(self, env)
         self.soft: List[Tuple[FNode, FNode]] = []
         self._bv_signed = False
         self._real_weights = real_weights
 
     def add_soft_clause(self, clause: FNode, weight: FNode):
         """Accepts soft clauses and the relative weights"""
-        mgr = get_env().formula_manager
-        if not clause.get_type().is_bool_type():
+        mgr = self.env.formula_manager
+        get_type = self.env.stc.get_type
+        if not get_type(clause).is_bool_type():
             raise PysmtValueError(
                 "Clause '%s' has to be a boolean formula; given type is: '%s'" %
-                (str(clause), str(clause.get_type()))
+                (str(clause), str(get_type(clause)))
             )
         if isinstance(weight, FNode):
             if not weight.is_constant():
                 raise PysmtValueError(
                     "Weight '%s' has to be a constant; given type is: '%s'" %
-                    (str(weight), str(weight.get_type()))
+                    (str(weight), str(get_type(weight)))
                 )
-            weight_type = weight.get_type()
+            weight_type = get_type(weight)
             if not weight_type.is_real_type() and not weight_type.is_int_type():
                 raise PysmtValueError(
                     "Weight '%s' has to be a real or integer type; given type is: '%s'" %
@@ -240,7 +275,7 @@ class MaxSMTGoal(Goal):
             if weight_type.is_real_type() and not self._real_weights:
                 raise PysmtValueError(
                     "Weight '%s' has to be an integer because the flag 'real_weights' is set to 'False'; given type is: '%s'" %
-                    (str(weight), str(weight.get_type()))
+                    (str(weight), str(weight_type))
                 )
             if weight_type.is_int_type() and self._real_weights:
                 weight = mgr.Real(cast(int, weight.constant_value()))
@@ -260,7 +295,7 @@ class MaxSMTGoal(Goal):
 
     def term(self) -> FNode:
         formula = None
-        mgr = get_env().formula_manager
+        mgr = self.env.formula_manager
         zero = mgr.Real(0) if self.real_weights() else mgr.Int(0)
         for (c, w) in self.soft:
             if formula is not None:

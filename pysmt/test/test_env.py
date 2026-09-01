@@ -19,6 +19,9 @@ from io import StringIO
 
 from pysmt.shortcuts import Symbol
 import pysmt.factory
+from pysmt.optimization.goal import (MaxMinGoal, MaximizationGoal,
+                                     MaxSMTGoal, MinimizationGoal,
+                                     MinMaxGoal)
 from pysmt.rewritings import CNFizer, NNFizer, PrenexNormalizer
 from pysmt.smtlib.printers import to_smtlib
 from pysmt.smtlib.script import smtlibscript_from_formula
@@ -146,6 +149,29 @@ class TestEnvironment(TestCase):
         buf = StringIO()
         smtlibscript_from_formula(f, env=env).serialize(buf, env=env)
         self.assertIn("bvult", buf.getvalue())
+
+        self.assertEqual(len(global_env.formula_manager.formulae), global_size,
+                         "the global environment was polluted")
+
+    def test_goals_use_given_env(self):
+        """Optimization goals must build their terms in the given env."""
+        global_env = get_env()
+        env, x, y, _ = self._local_env_formula()
+        mgr = env.formula_manager
+        global_size = len(global_env.formula_manager.formulae)
+
+        maxsmt = MaxSMTGoal(real_weights=False, env=env)
+        maxsmt.add_soft_clause(mgr.BVULT(x, y), mgr.Int(1))
+
+        goals = [MaximizationGoal(x, env=env),
+                 MinimizationGoal(x, env=env),
+                 MinMaxGoal([x, y], env=env),
+                 MaxMinGoal([x, y], env=env),
+                 maxsmt]
+        for goal in goals:
+            self.assertIs(goal.env, env)
+            self.assertIn(goal.term(), mgr)
+            goal.get_logic()
 
         self.assertEqual(len(global_env.formula_manager.formulae), global_size,
                          "the global environment was polluted")
