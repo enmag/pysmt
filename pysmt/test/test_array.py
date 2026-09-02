@@ -18,12 +18,15 @@
 
 from pysmt.test import TestCase, main
 from pysmt.test import skipIfNoSolverForLogic, skipIfSolverNotAvailable
-from pysmt.logics import QF_AUFLIA, QF_AUFBV
+from pysmt.logics import QF_AUFLIA, QF_AUFBV, get_logic_by_name
 from pysmt.typing import ARRAY_INT_INT, ArrayType, INT, REAL, BV8, BOOL
-from pysmt.shortcuts import (Solver,
+from pysmt.shortcuts import (Solver, get_env, simplify,
                              Symbol, Not, Equals, Int, BV, Real, FreshSymbol,
                              Select, Store, Array, TRUE)
 from pysmt.exceptions import ConvertExpressionError, PysmtTypeError, PysmtValueError
+
+
+QF_ALIA_CONST = get_logic_by_name("QF_ALIA*")
 
 
 class TestArray(TestCase):
@@ -91,6 +94,22 @@ class TestArray(TestCase):
     def test_btor_support_bool_as_array_elements(self):
         formula = Equals(Array(BV8, TRUE()), FreshSymbol(ArrayType(BV8, BOOL)))
         self.assertSat(formula, logic=QF_AUFBV, solver_name="btor")
+
+    @skipIfNoSolverForLogic(QF_ALIA_CONST)
+    def test_const_array_model(self):
+        """Constant arrays round-trip through every solver supporting them."""
+        a = Symbol("a", ARRAY_INT_INT)
+        value = Store(Store(Array(INT, Int(0)), Int(1), Int(5)), Int(2), Int(7))
+        formula = Equals(a, value)
+        for name in get_env().factory.all_solvers(logic=QF_ALIA_CONST):
+            with Solver(name=name, logic=QF_ALIA_CONST) as s:
+                s.add_assertion(formula)
+                self.assertTrue(s.solve(), name)
+                model = s.get_value(a)
+                for idx, expected in [(Int(1), Int(5)), (Int(2), Int(7)),
+                                      (Int(42), Int(0))]:
+                    self.assertEqual(simplify(Select(model, idx)), expected,
+                                     (name, model))
 
     def test_complex_types(self):
         with self.assertRaises(PysmtTypeError):
