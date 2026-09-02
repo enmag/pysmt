@@ -25,7 +25,7 @@ except ImportError:
     raise SolverAPINotFound
 
 import pysmt.typing as types
-from pysmt.logics import PYSMT_LOGICS, ARRAYS_CONST_LOGICS
+from pysmt.logics import PYSMT_LOGICS
 
 from pysmt.solvers.solver import Solver, Converter, SolverOptions
 from pysmt.exceptions import (SolverReturnedUnknownResultError,
@@ -77,7 +77,6 @@ class CVC4Options(SolverOptions):
 class CVC4Solver(SmtLibBasicSolver):
 
     LOGICS = PYSMT_LOGICS -\
-             ARRAYS_CONST_LOGICS -\
              set(l for l in PYSMT_LOGICS if not l.theory.linear)
 
     OptionsClass = CVC4Options
@@ -92,6 +91,9 @@ class CVC4Solver(SmtLibBasicSolver):
         self.cvc4 = None
         self.declarations = None
         self.logic_name = str(logic)
+        if self.logic_name.endswith("*"):
+            # Const-array extension (pySMT-internal suffix)
+            self.logic_name = self.logic_name[:-1]
         if "t" in self.logic_name:
             # Custom Type extension
             self.logic_name = self.logic_name.replace("t","")
@@ -247,17 +249,33 @@ class CVC4Converter(Converter, DagWalker):
                 v = expr.getConstString()
                 res = self.mgr.String(v.toString())
             elif expr.getType().isArray():
-                const_ = expr.getConstArrayStoreAll()
-                array_type = self._cvc4_type_to_type(const_.getType())
-                base_value = self.back(const_.getExpr())
-                res = self.mgr.Array(array_type.index_type,
-                                     base_value)
+                res = self._back_array(expr)
             else:
                 raise PysmtTypeError("Unsupported constant type:",
                                      expr.getType().toString())
         else:
             raise PysmtTypeError("Unsupported expression:", expr.toString())
 
+        return res
+
+    def _back_array(self, expr):
+        """Converts a CVC4 array value into a pySMT Array.
+
+        CVC4 represents an array value as a (possibly empty) sequence of
+        STOREs on top of a STORE_ALL node, which holds the default value.
+        """
+        assert expr.getType().isArray(), "Expecting a CVC4 array"
+        stores = []
+        while expr.getNumChildren() == 3:
+            # STORE(array, index, value)
+            array, index, value = expr.getChildren()
+            stores.append((self.back(index), self.back(value)))
+            expr = array
+        const_ = expr.getConstArrayStoreAll()
+        array_type = self._cvc4_type_to_type(const_.getType())
+        res = self.mgr.Array(array_type.index_type, self.back(const_.getExpr()))
+        for index, value in reversed(stores):
+            res = self.mgr.Store(res, index, value)
         return res
 
     @catch_conversion_error
@@ -333,6 +351,15 @@ class CVC4Converter(Converter, DagWalker):
 
     def walk_array_select(self, formula, args, **kwargs):
         return self.mkExpr(CVC4.SELECT, args[0], args[1])
+
+    def walk_array_value(self, formula, args, **kwargs):
+        arr_type = self.env.stc.get_type(formula)
+        rval = self.mkConst(CVC4.ArrayStoreAll(self._type_to_cvc4(arr_type),
+                                               args[0]))
+        # The remaining args are (index, value) pairs
+        for i in range(1, len(args), 2):
+            rval = self.mkExpr(CVC4.STORE, rval, args[i], args[i+1])
+        return rval
 
     def walk_minus(self, formula, args, **kwargs):
         return self.mkExpr(CVC4.MINUS, args[0], args[1])
