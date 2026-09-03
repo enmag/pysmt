@@ -42,7 +42,7 @@ INSTALLERS = [
     Installer(PicoSATInstaller, "965",
               {"pypicosat_minor_version" : "1708010052"}),
     Installer(CuddInstaller,    "2.0.3",
-              {"git_version" : "ecb03d6d231273343178f566cc4d7258dcce52b4"}),
+              {"git_version" : "0dabef26859b15710fd92e68e4eb6cf922a09de9"}),
     Installer(OptiMSatInstaller, "1.7.5", {})
 ]
 
